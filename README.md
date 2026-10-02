@@ -41,17 +41,36 @@ The `.m3u` sources are rebuilt from JSON, then the public playlists are written 
 ### Publishing changes
 
 ```sh
-npm run playlist:generate
+make generate
 git add streams/th.json
 git commit -m "Update Thai playlist"
 git push origin main
-gh workflow run update.yml --repo huakwan/iptv
-gh run watch --repo huakwan/iptv --exit-status
+make deploy
 ```
+
+Deploy is manual: the [update](.github/workflows/update.yml) workflow runs only on `workflow_dispatch` and a daily schedule, not on push.
+
+## Makefile
+
+Common tasks are wrapped in a `Makefile`:
+
+| Command | Description |
+| --- | --- |
+| `make install` | Install dependencies |
+| `make generate` | Rebuild `.m3u` from JSON and generate public playlists |
+| `make build` | Rebuild `streams/*.m3u` from `streams/*.json` only |
+| `make lint` | Run ESLint over `scripts/` |
+| `make playlist-lint` | Run m3u-linter over `streams/*.m3u` |
+| `make validate` | Validate playlists against the API data |
+| `make deploy` | Trigger the update workflow and wait for it |
+| `make status` | Show recent workflow runs |
+| `make check-url` | Check the HTTP status of the live playlist |
+
+`REPO`, `BRANCH`, and `URL` can be overridden, e.g. `make deploy REPO=huakwan/iptv`.
 
 ## EPG
 
-An [Electronic Program Guide](https://en.wikipedia.org/wiki/Electronic_program_guide) for most channels can be downloaded using utilities published in the [iptv-org/epg](https://github.com/iptv-org/epg) repository.
+The generated playlists do not include an [Electronic Program Guide](https://en.wikipedia.org/wiki/Electronic_program_guide) (`x-tvg-url`). Guide data for many channels can still be obtained via the [iptv-org/epg](https://github.com/iptv-org/epg) repository.
 
 ## Legal
 
@@ -59,6 +78,6 @@ No video files are stored in this repository. The repository simply contains use
 
 ## License
 
-[![CC0](http://mirrors.creativecommons.org/presskit/buttons/88x31/svg/cc-zero.svg)](LICENSE)
+[![CC0](https://mirrors.creativecommons.org/presskit/buttons/88x31/svg/cc-zero.svg)](LICENSE)
 
 This repository is based on [iptv-org/iptv](https://github.com/iptv-org/iptv), which is released under the [Unlicense](https://unlicense.org/).
