@@ -21,10 +21,6 @@ async function main() {
   })
   const files = await streamsStorage.list('**/*.m3u')
   let streams = await parser.parse(files)
-  streams = streams.map((stream: Stream) => {
-    stream.setGuides(data.guidesGroupedByStreamId.get(stream.getId()))
-    return stream
-  })
 
   logger.info('filtering streams to Thailand only...')
   streams = streams.filter((stream: Stream) => stream.countryName === 'Thailand')
