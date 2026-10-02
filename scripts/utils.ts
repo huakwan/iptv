@@ -308,8 +308,8 @@ export async function loadDiscussions() {
     `
 
     const result = await octokit.graphql.paginate(query, {
-      owner: 'iptv-org',
-      repo: 'iptv',
+      owner: OWNER,
+      repo: REPO,
       orderBy: {
         field: 'CREATED_AT',
         direction: 'ASC'

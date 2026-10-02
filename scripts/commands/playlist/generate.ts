@@ -5,20 +5,7 @@ import { loadData, data } from '../../api'
 import { Logger } from '@freearhey/core'
 import uniqueId from 'lodash.uniqueid'
 import { Stream } from '../../models'
-import {
-  IndexCategoryGenerator,
-  IndexLanguageGenerator,
-  IndexCountryGenerator,
-  SubdivisionsGenerator,
-  CategoriesGenerator,
-  CountriesGenerator,
-  LanguagesGenerator,
-  RegionsGenerator,
-  SourcesGenerator,
-  CitiesGenerator,
-  IndexGenerator,
-  RawGenerator
-} from '../../generators'
+import { CountriesGenerator, IndexGenerator } from '../../generators'
 
 async function main() {
   const logger = new Logger()
@@ -38,11 +25,11 @@ async function main() {
     stream.setGuides(data.guidesGroupedByStreamId.get(stream.getId()))
     return stream
   })
+
+  logger.info('filtering streams to Thailand only...')
+  streams = streams.filter((stream: Stream) => stream.countryName === 'Thailand')
   const totalStreams = streams.count()
   logger.info(`found ${totalStreams} streams`)
-
-  logger.info('generating raw/...')
-  await new RawGenerator({ streams, logFile }).generate()
 
   logger.info('create unique names...')
   const channelCountries = new Map<string, Set<string>>()
@@ -75,40 +62,13 @@ async function main() {
     .filter((stream: Stream) => stream.hasChannel() && stream.hasFeed())
     .uniqBy((stream: Stream) => stream.getId() || uniqueId())
 
-  const { categories, countries, subdivisions, cities, regions } = data
-
-  logger.info('generating categories/...')
-  await new CategoriesGenerator({ categories, streams, logFile }).generate()
-
-  logger.info('generating languages/...')
-  await new LanguagesGenerator({ streams, logFile }).generate()
+  const { countries } = data
 
   logger.info('generating countries/...')
   await new CountriesGenerator({ countries, streams, logFile }).generate()
 
-  logger.info('generating subdivisions/...')
-  await new SubdivisionsGenerator({ subdivisions, streams, logFile }).generate()
-
-  logger.info('generating cities/...')
-  await new CitiesGenerator({ cities, streams, logFile }).generate()
-
-  logger.info('generating regions/...')
-  await new RegionsGenerator({ streams, regions, logFile }).generate()
-
-  logger.info('generating sources/...')
-  await new SourcesGenerator({ streams, logFile }).generate()
-
   logger.info('generating index.m3u...')
   await new IndexGenerator({ streams, logFile }).generate()
-
-  logger.info('generating index.category.m3u...')
-  await new IndexCategoryGenerator({ streams, logFile }).generate()
-
-  logger.info('generating index.country.m3u...')
-  await new IndexCountryGenerator({ streams, logFile }).generate()
-
-  logger.info('generating index.language.m3u...')
-  await new IndexLanguageGenerator({ streams, logFile }).generate()
 
   logger.info('saving generators.log...')
   const logStorage = new Storage(LOGS_DIR)
