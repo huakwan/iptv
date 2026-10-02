@@ -9,22 +9,22 @@ import { CountriesGenerator, IndexGenerator } from '../../generators'
 import path from 'node:path'
 import fs from 'node:fs'
 
-function loadChannelNumbers(): Map<string, number> {
-  const numbers = new Map<string, number>()
+function loadChannelOrder(): Map<string, number> {
+  const order = new Map<string, number>()
   const dir = path.join(process.cwd(), STREAMS_DIR)
-  if (!fs.existsSync(dir)) return numbers
+  if (!fs.existsSync(dir)) return order
 
-  for (const file of fs.readdirSync(dir)) {
+  for (const file of fs.readdirSync(dir).sort()) {
     if (!file.endsWith('.json')) continue
     const entries = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'))
-    for (const entry of entries) {
-      if (entry.tvgId && typeof entry.number === 'number') {
-        numbers.set(entry.tvgId, entry.number)
+    entries.forEach((entry: { tvgId?: string }, index: number) => {
+      if (entry.tvgId && !order.has(entry.tvgId)) {
+        order.set(entry.tvgId, index)
       }
-    }
+    })
   }
 
-  return numbers
+  return order
 }
 
 async function main() {
@@ -61,10 +61,10 @@ async function main() {
   }
 
   logger.info('sorting streams...')
-  const channelNumbers = loadChannelNumbers()
+  const channelOrder = loadChannelOrder()
   streams = streams.sortBy(
     [
-      (stream: Stream) => channelNumbers.get(stream.getTvgId()) ?? 9999,
+      (stream: Stream) => channelOrder.get(stream.getTvgId()) ?? 9999,
       (stream: Stream) => stream.channelUniqueName,
       (stream: Stream) => (stream.hasMainFeed ? 1 : 0),
       (stream: Stream) => stream.feedName,
