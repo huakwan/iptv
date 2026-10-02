@@ -27,6 +27,8 @@ export class CountriesGenerator implements Generator {
     const streams = this.streams
       .filter((stream: Stream) => stream.isSFW())
       .map((stream: Stream) => {
+        if (stream.groupTitle !== 'Undefined') return stream
+
         const groupTitle = stream
           .getCategories()
           .map(category => category.name)

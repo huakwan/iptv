@@ -119,6 +119,7 @@ export class Stream extends sdk.Models.Stream {
     stream.line = data.line
     stream.isNot247 = labels.includes('Not 24/7')
     stream.isGeoBlocked = labels.includes('Geo-blocked')
+    if (data.group?.title) stream.groupTitle = data.group.title
 
     const feed = stream.getFeed()
     stream.hasMainFeed = feed?.is_main
