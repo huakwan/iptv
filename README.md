@@ -15,12 +15,9 @@ Paste one of the playlist links below into any video player that supports live s
 
 ## Source
 
-Channel data is taken from the [iptv-org/api](https://github.com/iptv-org/api) repository. The playlist sources live in [`streams/`](streams):
+Channel data is taken from the [iptv-org/api](https://github.com/iptv-org/api) repository. The playlist source lives in [`streams/th.m3u`](streams/th.m3u).
 
-- `streams/th.m3u`
-- `streams/th_v2hcdn.m3u`
-
-To add or fix a channel, edit the relevant file above and run:
+To add, fix, or remove a channel, edit `streams/th.m3u` and run:
 
 ```sh
 npm install
@@ -28,6 +25,17 @@ npm run playlist:generate
 ```
 
 The generated playlists are written to `.gh-pages/` and deployed to GitHub Pages by the [update](.github/workflows/update.yml) workflow.
+
+### Publishing changes
+
+```sh
+npm run playlist:generate
+git add streams/th.m3u
+git commit -m "Update Thai playlist"
+git push origin main
+gh workflow run update.yml --repo huakwan/iptv
+gh run watch --repo huakwan/iptv --exit-status
+```
 
 ## EPG
 
