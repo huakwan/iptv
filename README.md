@@ -15,22 +15,34 @@ Paste one of the playlist links below into any video player that supports live s
 
 ## Source
 
-Channel data is taken from the [iptv-org/api](https://github.com/iptv-org/api) repository. The playlist source lives in [`streams/th.m3u`](streams/th.m3u).
+Channel data is taken from the [iptv-org/api](https://github.com/iptv-org/api) repository. The playlist source lives in [`streams/th.json`](streams/th.json). The `.m3u` files in `streams/` are generated from it and are not tracked in git.
 
-To add, fix, or remove a channel, edit `streams/th.m3u` and run:
+Each entry supports these fields:
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `tvgId` | yes | Channel id plus feed, e.g. `3HD.th@SD` |
+| `name` | yes | Display name shown in the player |
+| `url` | yes | Stream URL |
+| `group` | no | Group title. Falls back to the channel category from the API when omitted |
+| `labels` | no | Extra labels, e.g. `["Not 24/7", "Geo-blocked"]` |
+| `userAgent` | no | `http-user-agent` header required by the stream |
+| `referrer` | no | `http-referrer` header required by the stream |
+
+To add, fix, or remove a channel, edit `streams/th.json` and run:
 
 ```sh
 npm install
 npm run playlist:generate
 ```
 
-The generated playlists are written to `.gh-pages/` and deployed to GitHub Pages by the [update](.github/workflows/update.yml) workflow.
+The `.m3u` sources are rebuilt from JSON, then the public playlists are written to `.gh-pages/` and deployed to GitHub Pages by the [update](.github/workflows/update.yml) workflow.
 
 ### Publishing changes
 
 ```sh
 npm run playlist:generate
-git add streams/th.m3u
+git add streams/th.json
 git commit -m "Update Thai playlist"
 git push origin main
 gh workflow run update.yml --repo huakwan/iptv

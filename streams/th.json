@@ -1,0 +1,13 @@
+[
+  {
+    "tvgId": "3HD.th@SD",
+    "name": "3HD",
+    "group": "News",
+    "url": "https://live-us1.thaimomo.com/live-as/ch3hd-3/playlist.m3u8"
+  },
+  {
+    "tvgId": "One31.th@SD",
+    "name": "One 31",
+    "url": "https://live-us1.thaimomo.com/live-as/chone-3/playlist.m3u8"
+  }
+]
