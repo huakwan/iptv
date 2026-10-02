@@ -6,6 +6,26 @@ import { Logger } from '@freearhey/core'
 import uniqueId from 'lodash.uniqueid'
 import { Stream } from '../../models'
 import { CountriesGenerator, IndexGenerator } from '../../generators'
+import path from 'node:path'
+import fs from 'node:fs'
+
+function loadChannelNumbers(): Map<string, number> {
+  const numbers = new Map<string, number>()
+  const dir = path.join(process.cwd(), STREAMS_DIR)
+  if (!fs.existsSync(dir)) return numbers
+
+  for (const file of fs.readdirSync(dir)) {
+    if (!file.endsWith('.json')) continue
+    const entries = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'))
+    for (const entry of entries) {
+      if (entry.tvgId && typeof entry.number === 'number') {
+        numbers.set(entry.tvgId, entry.number)
+      }
+    }
+  }
+
+  return numbers
+}
 
 async function main() {
   const logger = new Logger()
@@ -41,8 +61,10 @@ async function main() {
   }
 
   logger.info('sorting streams...')
+  const channelNumbers = loadChannelNumbers()
   streams = streams.sortBy(
     [
+      (stream: Stream) => channelNumbers.get(stream.getTvgId()) ?? 9999,
       (stream: Stream) => stream.channelUniqueName,
       (stream: Stream) => (stream.hasMainFeed ? 1 : 0),
       (stream: Stream) => stream.feedName,
@@ -50,7 +72,7 @@ async function main() {
       (stream: Stream) => (stream.isNot247 ? -1 : 0),
       (stream: Stream) => stream.getVerticalResolution()
     ],
-    ['asc', 'desc', 'asc', 'desc', 'desc', 'desc']
+    ['asc', 'asc', 'desc', 'asc', 'desc', 'desc', 'desc']
   )
 
   logger.info('filtering streams...')
