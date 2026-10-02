@@ -24,7 +24,18 @@ export class CountriesGenerator implements Generator {
   }
 
   async generate(): Promise<void> {
-    const streams = this.streams.filter((stream: Stream) => stream.isSFW())
+    const streams = this.streams
+      .filter((stream: Stream) => stream.isSFW())
+      .map((stream: Stream) => {
+        const groupTitle = stream
+          .getCategories()
+          .map(category => category.name)
+          .sort()
+          .join(';')
+        if (groupTitle) stream.groupTitle = groupTitle
+
+        return stream
+      })
 
     const filepath = 'countries/th.m3u'
     const playlist = new Playlist(streams, { public: true, raw: false })
