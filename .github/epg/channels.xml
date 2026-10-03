@@ -14,6 +14,7 @@
   <channel site="gigatv.3bbtv.co.th" site_id="33" lang="th" xmltv_id="3HD.th@SD">3HD</channel>
   <channel site="gigatv.3bbtv.co.th" site_id="34" lang="th" xmltv_id="AmarinTV.th@SD">Amarin TV</channel>
   <channel site="gigatv.3bbtv.co.th" site_id="7" lang="th" xmltv_id="TSports7.th@SD">T Sports 7</channel>
+  <channel site="gigatv.3bbtv.co.th" site_id="10" lang="th" xmltv_id="ThaiParliamentTelevision.th@SD">TPTV</channel>
   <!-- tv.trueid.net -->
   <channel site="tv.trueid.net" site_id="thaipbs" lang="th" xmltv_id="ThaiPBS.th@SD">Thai PBS</channel>
   <channel site="tv.trueid.net" site_id="nationtv" lang="th" xmltv_id="NationTV.th@SD">Nation TV</channel>
@@ -21,7 +22,6 @@
   <channel site="tv.trueid.net" site_id="true4u" lang="th" xmltv_id="True4U.th@SD">True4U</channel>
   <channel site="tv.trueid.net" site_id="gmm25" lang="th" xmltv_id="GMM25.th@SD">GMM 25</channel>
   <channel site="tv.trueid.net" site_id="mono29" lang="th" xmltv_id="MONO29.th@SD">MONO 29</channel>
-  <channel site="tv.trueid.net" site_id="nbt" lang="th" xmltv_id="NBT2HD.th@SD">NBT 2 HD</channel>
   <channel site="tv.trueid.net" site_id="tnn16" lang="th" xmltv_id="TNN16.th@SD">TNN 16</channel>
   <channel site="tv.trueid.net" site_id="9mcot-hd" lang="th" xmltv_id="MCOTHD.th@SD">MCOT HD</channel>
   <channel site="tv.trueid.net" site_id="thairathtv-hd" lang="th" xmltv_id="ThairathTV.th@SD">Thairath TV</channel>
@@ -31,5 +31,6 @@
   <channel site="tv.trueid.net" site_id="ch7-hd" lang="th" xmltv_id="Channel7.th@SD">Channel 7</channel>
   <channel site="tv.trueid.net" site_id="ch8" lang="th" xmltv_id="Channel8.th@SD">Channel 8</channel>
   <channel site="tv.trueid.net" site_id="t-sports-7-sd" lang="th" xmltv_id="TSports7.th@SD">T Sports 7</channel>
-  <channel site="tv.trueid.net" site_id="true-movie-hits" lang="th" xmltv_id="TrueMovieHits.th@SD">True Movie Hits</channel>
+  <channel site="tv.trueid.net" site_id="thaichaiyo" lang="th" xmltv_id="ThaiChaiyo.th@SD">ไทไชโย</channel>
+  <channel site="tv.trueid.net" site_id="cool-ch" lang="th" xmltv_id="CoolChannel.th@SD">คูล ชาแนล</channel>
 </channels>
