@@ -4,7 +4,7 @@
 
 ## ที่มา
 
-โปรเจกต์นี้ fork มาจาก [iptv-org/iptv](https://github.com/iptv-org/iptv) ซึ่งรวบรวมลิงก์สตรีมสาธารณะทั่วโลก แต่เวอร์ชันนี้ **ตัดให้เหลือเฉพาะช่องไทยจำนวนหนึ่ง** ที่ทดสอบแล้วว่าเล่นได้ (ปัจจุบัน 16 ช่อง) โดยแก้ไขจากรายการใน [`streams/th.json`](streams/th.json) เท่านั้น ไม่ได้ตั้งใจทำเป็นคลังช่องครบทุกช่องเหมือนต้นทาง
+โปรเจกต์นี้ fork มาจาก [iptv-org/iptv](https://github.com/iptv-org/iptv) ซึ่งรวบรวมลิงก์สตรีมสาธารณะทั่วโลก แต่เวอร์ชันนี้ **ตัดให้เหลือเฉพาะช่องไทยจำนวนหนึ่ง** ที่ทดสอบแล้วว่าเล่นได้ (ปัจจุบัน 18 ช่อง) โดยแก้ไขจากรายการใน [`streams/th.json`](streams/th.json) เท่านั้น ไม่ได้ตั้งใจทำเป็นคลังช่องครบทุกช่องเหมือนต้นทาง
 
 ## การใช้งานกับ APTV (Apple CarPlay)
 
@@ -38,8 +38,10 @@ https://huakwan.github.io/iptv/guide.xml
 | General | 3HD, Channel 5, Channel 7, Channel 8, MCOT HD, One 31 |
 | Entertainment | Workpoint TV, MONO 29, True4U, Amarin TV, GMM 25, Thairath TV, Nation TV |
 | News | Thai PBS, NBT 2 HD, TNN 16 |
+| Sports | T Sports 7 |
+| Movies | True Movie Hits |
 
-หมายเหตุ: ลิงก์สตรีม IPTV ตายบ่อย หากช่องใดเล่นไม่ได้ ให้แจ้งผ่าน issue
+หมายเหตุ: ลิงก์สตรีม IPTV ตายบ่อย หากช่องใดเล่นไม่ได้ ให้แจ้งผ่าน issue. True Movie Hits เป็นสตรีม raw MPEG-TS (ไม่ใช่ HLS) เครื่องเล่นทั่วไปเปิดได้ แต่บางตัวอาจใช้เวลาโหลดนานกว่าปกติ
 
 ## สำหรับนักพัฒนา
 

@@ -94,5 +94,17 @@
     "name": "TNN 16",
     "group": "News",
     "url": "https://live-us1.thaimomo.com/live-as/chtnn24-2/playlist.m3u8"
+  },
+  {
+    "tvgId": "TSports7.th@SD",
+    "name": "T Sports 7",
+    "group": "Sports",
+    "url": "https://live-us1.thaimomo.com/live-as/chtsport-1/playlist.m3u8"
+  },
+  {
+    "tvgId": "TrueMovieHits.th@SD",
+    "name": "True Movie Hits",
+    "group": "Movies",
+    "url": "http://58.8.186.128:10003/bysid/2325"
   }
 ]

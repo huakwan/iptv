@@ -13,6 +13,7 @@
   <channel site="gigatv.3bbtv.co.th" site_id="32" lang="th" xmltv_id="ThairathTV.th@SD">Thairath TV</channel>
   <channel site="gigatv.3bbtv.co.th" site_id="33" lang="th" xmltv_id="3HD.th@SD">3HD</channel>
   <channel site="gigatv.3bbtv.co.th" site_id="34" lang="th" xmltv_id="AmarinTV.th@SD">Amarin TV</channel>
+  <channel site="gigatv.3bbtv.co.th" site_id="7" lang="th" xmltv_id="TSports7.th@SD">T Sports 7</channel>
   <!-- tv.trueid.net -->
   <channel site="tv.trueid.net" site_id="thaipbs" lang="th" xmltv_id="ThaiPBS.th@SD">Thai PBS</channel>
   <channel site="tv.trueid.net" site_id="nationtv" lang="th" xmltv_id="NationTV.th@SD">Nation TV</channel>
@@ -29,4 +30,6 @@
   <channel site="tv.trueid.net" site_id="ch5" lang="th" xmltv_id="Channel5.th@SD">Channel 5</channel>
   <channel site="tv.trueid.net" site_id="ch7-hd" lang="th" xmltv_id="Channel7.th@SD">Channel 7</channel>
   <channel site="tv.trueid.net" site_id="ch8" lang="th" xmltv_id="Channel8.th@SD">Channel 8</channel>
+  <channel site="tv.trueid.net" site_id="t-sports-7-sd" lang="th" xmltv_id="TSports7.th@SD">T Sports 7</channel>
+  <channel site="tv.trueid.net" site_id="true-movie-hits" lang="th" xmltv_id="TrueMovieHits.th@SD">True Movie Hits</channel>
 </channels>
