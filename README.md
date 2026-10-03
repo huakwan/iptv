@@ -1,83 +1,69 @@
 # Thai IPTV
 
-Collection of publicly available IPTV (Internet Protocol television) channels broadcast in Thailand.
+เพลย์ลิสต์ช่องโทรทัศน์ไทยสำหรับเล่นผ่านแอพ **APTV** บน iPhone/iPad/Apple TV และ **Apple CarPlay**
 
-This is a Thailand-only fork of [iptv-org/iptv](https://github.com/iptv-org/iptv). Only channels whose channel country is Thailand (`TH`) are included.
+## ที่มา
 
-## How to use
+โปรเจกต์นี้ fork มาจาก [iptv-org/iptv](https://github.com/iptv-org/iptv) ซึ่งรวบรวมลิงก์สตรีมสาธารณะทั่วโลก แต่เวอร์ชันนี้ **ตัดให้เหลือเฉพาะช่องไทยจำนวนหนึ่ง** ที่ทดสอบแล้วว่าเล่นได้ (ปัจจุบัน 16 ช่อง) โดยแก้ไขจากรายการใน [`streams/th.json`](streams/th.json) เท่านั้น ไม่ได้ตั้งใจทำเป็นคลังช่องครบทุกช่องเหมือนต้นทาง
 
-Paste one of the playlist links below into any video player that supports live streaming (for example VLC, TiviMate, or Kodi) and press _Open_.
+## การใช้งานกับ APTV (Apple CarPlay)
 
-| Playlist | URL |
-| --- | --- |
-| All Thai channels | `https://huakwan.github.io/iptv/countries/th.m3u` |
-| Index (grouped) | `https://huakwan.github.io/iptv/index.m3u` |
+1. เปิดแอพ APTV แล้วไปที่เมนูเพิ่มเพลย์ลิสต์ (Playlist / M3U)
+2. วางลิงก์นี้:
 
-## Source
+   ```
+   https://huakwan.github.io/iptv/countries/th.m3u
+   ```
 
-Channel data is taken from the [iptv-org/api](https://github.com/iptv-org/api) repository. The playlist source lives in [`streams/th.json`](streams/th.json). The `.m3u` files in `streams/` are generated from it and are not tracked in git.
+   ใช้ลิงก์ `https://huakwan.github.io/iptv/index.m3u` ก็ได้ ผลลัพธ์เหมือนกัน (มีช่องไทยชุดเดียวกัน)
+3. บันทึกแล้วรอ APTV ดึงข้อมูลช่อง
+4. เชื่อมต่อกับระบบ Apple CarPlay แล้วเปิด APTV จะเห็นรายการช่องในหน้ารถ
 
-Each entry supports these fields:
+### EPG (ผังรายการ)
 
-| Field | Required | Description |
-| --- | --- | --- |
-| `tvgId` | yes | Channel id plus feed, e.g. `3HD.th@SD` |
-| `name` | yes | Display name shown in the player |
-| `url` | yes | Stream URL |
-| `group` | no | Group title. Falls back to the channel category from the API when omitted |
-| `labels` | no | Extra labels, e.g. `["Not 24/7", "Geo-blocked"]` |
-| `userAgent` | no | `http-user-agent` header required by the stream |
-| `referrer` | no | `http-referrer` header required by the stream |
+เพลย์ลิสต์ฝัง URL ของ EPG ไว้ในแท็ก `x-tvg-url` แล้ว APTV จะดึงผังรายการให้อัตโนมัติเมื่อโหลดเพลย์ลิสต์ ไม่ต้องตั้งค่าเพิ่ม
 
-To add, fix, or remove a channel, edit `streams/th.json` and run:
+ถ้าต้องการใส่เองด้วยมือ ใช้ลิงก์:
 
-```sh
-npm install
-npm run playlist:generate
+```
+https://huakwan.github.io/iptv/guide.xml
 ```
 
-The `.m3u` sources are rebuilt from JSON, then the public playlists are written to `.gh-pages/` and deployed to GitHub Pages by the [update](.github/workflows/update.yml) workflow.
+ข้อมูล EPG สร้างจากสองแหล่งคือ `gigatv.3bbtv.co.th` และ `tv.trueid.net` ถ้าแหล่งใดล่ม ช่องของแหล่งนั้นจะไม่มีผังในรอบนั้น แต่ยังเล่นสตรีมได้ตามปกติ
 
-### Publishing changes
+## ช่องที่มีในเพลย์ลิสต์
 
-```sh
-make generate
-git add streams/th.json
-git commit -m "Update Thai playlist"
-git push origin main
-make deploy
-```
-
-Deploy is manual: the [update](.github/workflows/update.yml) workflow runs only on `workflow_dispatch` and a daily schedule, not on push.
-
-## Makefile
-
-Common tasks are wrapped in a `Makefile`:
-
-| Command | Description |
+| หมวด | ช่อง |
 | --- | --- |
-| `make install` | Install dependencies |
-| `make generate` | Rebuild `.m3u` from JSON and generate public playlists |
-| `make build` | Rebuild `streams/*.m3u` from `streams/*.json` only |
-| `make lint` | Run ESLint over `scripts/` |
-| `make playlist-lint` | Run m3u-linter over `streams/*.m3u` |
-| `make validate` | Validate playlists against the API data |
-| `make deploy` | Trigger the update workflow and wait for it |
-| `make status` | Show recent workflow runs |
-| `make check-url` | Check the HTTP status of the live playlist |
+| General | 3HD, Channel 5, Channel 7, Channel 8, MCOT HD, One 31 |
+| Entertainment | Workpoint TV, MONO 29, True4U, Amarin TV, GMM 25, Thairath TV, Nation TV |
+| News | Thai PBS, NBT 2 HD, TNN 16 |
 
-`REPO`, `BRANCH`, and `URL` can be overridden, e.g. `make deploy REPO=huakwan/iptv`.
+หมายเหตุ: ลิงก์สตรีม IPTV ตายบ่อย หากช่องใดเล่นไม่ได้ ให้แจ้งผ่าน issue
 
-## EPG
+## สำหรับนักพัฒนา
 
-The generated playlists do not include an [Electronic Program Guide](https://en.wikipedia.org/wiki/Electronic_program_guide) (`x-tvg-url`). Guide data for many channels can still be obtained via the [iptv-org/epg](https://github.com/iptv-org/epg) repository.
+ส่วนนี้รวบไว้สั้น ๆ สำหรับผู้ที่ต้องการแก้ไขเพลย์ลิสต์เอง
+
+- แก้ช่องได้ที่ [`streams/th.json`](streams/th.json) ไฟล์เดียว (ไฟล์ `.m3u` ใน `streams/` ถูกสร้างใหม่และไม่เก็บใน git)
+- เมื่อเพิ่ม/ลบช่อง ต้องแก้ [`.github/epg/channels.xml`](.github/epg/channels.xml) ให้ตรงกันด้วย ไม่งั้นช่องจะไม่มีผังรายการ
+- คำสั่งหลัก:
+
+  ```sh
+  npm install              # ติดตั้ง dependencies
+  npm run playlist:generate # สร้าง .m3u แล้วอัปเดตเพลย์ลิสต์สาธารณะ
+  npm run lint             # ตรวจ ESLint
+  make deploy              # สั่งรัน workflow แล้ว deploy ขึ้น GitHub Pages
+  ```
+
+- การ deploy เป็นแบบmanual: workflow [update.yml](.github/workflows/update.yml) ทำงานตาม schedule รายวันและเมื่อสั่ง `workflow_dispatch` เท่านั้น ไม่รันตอน push
 
 ## Legal
 
-No video files are stored in this repository. The repository simply contains user-submitted links to publicly available video stream URLs, which to the best of our knowledge have been intentionally made publicly by the copyright holders. If any links in these playlists infringe on your rights as a copyright holder, they may be removed by opening an issue. However, note that we have **no control** over the destination of the link, and just removing the link from the playlist will not remove its contents from the web. Note that linking does not directly infringe copyright because no copy is made on the site providing the link, and thus this is **not** a valid reason to send a DMCA notice to GitHub. To remove this content from the web, you should contact the web host that's actually hosting the content (**not** GitHub, nor the maintainers of this repository).
+รีโปนี้ไม่ได้เก็บไฟล์วิดีโอใด ๆ มีเพียงลิงก์ไปยังสตรีมที่เผยแพร่ต่อสาธารณะอยู่แล้ว หากลิงก์ใดละเมิดลิขสิทธิ์ สามารถแจ้งเพื่อลบได้ผ่าน issue แต่ผู้ดูแลไม่สามารถควบคุมเนื้อหาปลายทางได้ และการลบลิงก์ออกจากเพลย์ลิสต์ไม่ได้ลบเนื้อหาออกจากเว็บต้นทาง
 
 ## License
 
 [![CC0](https://mirrors.creativecommons.org/presskit/buttons/88x31/svg/cc-zero.svg)](LICENSE)
 
-This repository is based on [iptv-org/iptv](https://github.com/iptv-org/iptv), which is released under the [Unlicense](https://unlicense.org/).
+โปรเจกต์นี้ต่อยอดจาก [iptv-org/iptv](https://github.com/iptv-org/iptv) ซึ่งเผยแพร่ภายใต้ [Unlicense](https://unlicense.org/)
