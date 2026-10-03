@@ -29,7 +29,5 @@
   <channel site="tv.trueid.net" site_id="ch7-hd" lang="th" xmltv_id="Channel7.th@SD">Channel 7</channel>
   <channel site="tv.trueid.net" site_id="ch8" lang="th" xmltv_id="Channel8.th@SD">Channel 8</channel>
   <channel site="tv.trueid.net" site_id="t-sports-7-sd" lang="th" xmltv_id="TSports7.th@SD">T Sports 7</channel>
-  <channel site="tv.trueid.net" site_id="thaichaiyo" lang="th" xmltv_id="ThaiChaiyo.th@SD">ไทไชโย</channel>
   <channel site="tv.trueid.net" site_id="rama-channel" lang="th" xmltv_id="RamaChannel.th@SD">Rama Channel</channel>
-  <channel site="tv.trueid.net" site_id="cool-ch" lang="th" xmltv_id="CoolChannel.th@SD">คูล ชาแนล</channel>
 </channels>
