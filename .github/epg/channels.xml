@@ -7,7 +7,6 @@
   <channel site="gigatv.3bbtv.co.th" site_id="24" lang="th" xmltv_id="True4U.th@SD">True4U</channel>
   <channel site="gigatv.3bbtv.co.th" site_id="25" lang="th" xmltv_id="GMM25.th@SD">GMM 25</channel>
   <channel site="gigatv.3bbtv.co.th" site_id="29" lang="th" xmltv_id="MONO29.th@SD">MONO 29</channel>
-  <channel site="gigatv.3bbtv.co.th" site_id="16" lang="th" xmltv_id="TNN16.th@SD">TNN 16</channel>
   <channel site="gigatv.3bbtv.co.th" site_id="30" lang="th" xmltv_id="MCOTHD.th@SD">MCOT HD</channel>
   <channel site="gigatv.3bbtv.co.th" site_id="31" lang="th" xmltv_id="One31.th@SD">One 31</channel>
   <channel site="gigatv.3bbtv.co.th" site_id="32" lang="th" xmltv_id="ThairathTV.th@SD">Thairath TV</channel>
@@ -22,7 +21,6 @@
   <channel site="tv.trueid.net" site_id="true4u" lang="th" xmltv_id="True4U.th@SD">True4U</channel>
   <channel site="tv.trueid.net" site_id="gmm25" lang="th" xmltv_id="GMM25.th@SD">GMM 25</channel>
   <channel site="tv.trueid.net" site_id="mono29" lang="th" xmltv_id="MONO29.th@SD">MONO 29</channel>
-  <channel site="tv.trueid.net" site_id="tnn16" lang="th" xmltv_id="TNN16.th@SD">TNN 16</channel>
   <channel site="tv.trueid.net" site_id="9mcot-hd" lang="th" xmltv_id="MCOTHD.th@SD">MCOT HD</channel>
   <channel site="tv.trueid.net" site_id="thairathtv-hd" lang="th" xmltv_id="ThairathTV.th@SD">Thairath TV</channel>
   <channel site="tv.trueid.net" site_id="amarintv-hd" lang="th" xmltv_id="AmarinTV.th@SD">Amarin TV</channel>
@@ -32,5 +30,6 @@
   <channel site="tv.trueid.net" site_id="ch8" lang="th" xmltv_id="Channel8.th@SD">Channel 8</channel>
   <channel site="tv.trueid.net" site_id="t-sports-7-sd" lang="th" xmltv_id="TSports7.th@SD">T Sports 7</channel>
   <channel site="tv.trueid.net" site_id="thaichaiyo" lang="th" xmltv_id="ThaiChaiyo.th@SD">ไทไชโย</channel>
+  <channel site="tv.trueid.net" site_id="rama-channel" lang="th" xmltv_id="RamaChannel.th@SD">Rama Channel</channel>
   <channel site="tv.trueid.net" site_id="cool-ch" lang="th" xmltv_id="CoolChannel.th@SD">คูล ชาแนล</channel>
 </channels>

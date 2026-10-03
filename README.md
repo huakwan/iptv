@@ -35,9 +35,9 @@ https://huakwan.github.io/iptv/guide.xml
 
 | หมวด | ช่อง |
 | --- | --- |
-| General | 3HD, Channel 5, Channel 7, Channel 8, MCOT HD, One 31 |
+| General | 3HD, Channel 5, Channel 7, Channel 8, MCOT HD, One 31, Rama Channel |
 | Entertainment | Workpoint TV, MONO 29, True4U, Amarin TV, GMM 25, Thai Chaiyo, Cool Channel, Good Idea TV |
-| News | Thai PBS, Thairath TV, Nation TV, TNN 16, Thai Parliament TV |
+| News | Thai PBS, Thairath TV, Nation TV, Thai Parliament TV |
 | Sports | T Sports 7 |
 
 หมายเหตุ: ลิงก์สตรีม IPTV ตายบ่อย หากช่องใดเล่นไม่ได้ ให้แจ้งผ่าน issue. ช่อง Good Idea TV ออกอากาศไม่ครบ 24 ชั่วโมง (ติดป้าย `[Not 24/7]`) และใช้สตรีมผ่าน HTTP (พอร์ต 1935) เครื่องเล่นบางตัวโดยเฉพาะบน iOS/APTV อาจไม่เปิดให้
