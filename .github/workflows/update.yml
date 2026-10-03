@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: npm install
       - name: Checkout EPG grabber
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: iptv-org/epg
           path: .epg
