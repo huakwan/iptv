@@ -3,6 +3,7 @@
   "scripts": {
     "act:update": "gh act workflow_dispatch -W .github/workflows/update.yml",
     "api:load": "tsx scripts/commands/api/load.ts",
+    "epg:dedupe": "tsx scripts/commands/epg/dedupe.ts",
     "playlist:build": "tsx scripts/commands/playlist/build.ts",
     "playlist:generate": "npm run playlist:build && tsx scripts/commands/playlist/generate.ts",
     "playlist:format": "tsx scripts/commands/playlist/format.ts",

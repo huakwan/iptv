@@ -14,6 +14,7 @@ Thailand-only fork of [iptv-org/iptv](https://github.com/iptv-org/iptv). Generat
 - `npm run lint` — ESLint over `scripts/**`. Run before committing; CI does not run it.
 - `npm run playlist:lint` — m3u-linter over `streams/*.m3u`.
 - `npm run playlist:validate` — validates internal playlists against the API data.
+- `npm run epg:dedupe` — removes duplicate `<programme>` slots from `.gh-pages/guide.xml`.
 - No test suite (`vitest` is a dependency but `tests/` was deleted and there is no `test` script).
 
 ## Source of truth
@@ -39,6 +40,7 @@ Thailand-only fork of [iptv-org/iptv](https://github.com/iptv-org/iptv). Generat
 - **Risk:** if the grab produces no file, `guide.xml` returns 404 for clients. The `Ensure guide exists` step writes an empty `<tv></tv>` fallback.
 - **Maintenance:** adding/removing a channel in `streams/th.json` does not update the guide. Hand-add/remove the matching `<channel>` entries in `.github/epg/channels.xml`.
 - `3HD`, `Channel5` and `One31` have no `xmltv_id` upstream, so they only appear because `channels.xml` sets `xmltv_id` explicitly. Do not switch to `--sites=...` (it drops them and bloats the guide).
+- Most channels map to two sources, so the raw grab emits each timeslot twice (overlapping entries in players). The `Deduplicate EPG` step runs `npm run epg:dedupe`, which keeps one `<programme>` per `channel`+`start` (longest title wins) and one `<channel>` per id.
 - Upstream `guides.json` (in `temp/data/`) has no `sources` for Thailand, so the old API-driven `x-tvg-url` path yields nothing; this static guide is the only source.
 
 ## Code constraints

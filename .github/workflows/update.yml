@@ -42,6 +42,8 @@ jobs:
           if [ ! -s .gh-pages/guide.xml ]; then
             printf '<?xml version="1.0" encoding="UTF-8"?>\n<tv></tv>\n' > .gh-pages/guide.xml
           fi
+      - name: Deduplicate EPG
+        run: npm run epg:dedupe
       - name: Generate playlists
         run: npm run playlist:generate
       - name: Setup Pages
