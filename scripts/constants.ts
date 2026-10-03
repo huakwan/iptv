@@ -9,3 +9,4 @@ export const TESTING = process.env.NODE_ENV === 'test' ? true : false
 export const OWNER = 'huakwan'
 export const REPO = 'iptv'
 export const EOL = '\r\n'
+export const GUIDE_URL = process.env.GUIDE_URL || 'https://huakwan.github.io/iptv/guide.xml'

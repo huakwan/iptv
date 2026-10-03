@@ -29,6 +29,18 @@ Thailand-only fork of [iptv-org/iptv](https://github.com/iptv-org/iptv). Generat
 - The generate pipeline filters streams to `countryName === 'Thailand'`, so foreign channels in `streams/` are discarded.
 - Dead stream URLs are common. Check with `curl -sS -m 15 -o /dev/null -w '%{http_code}\n' "<url>"` — 503/404 means replace it.
 
+## EPG (Thai channels)
+
+- Public playlists advertise the guide via `x-tvg-url="https://huakwan.github.io/iptv/guide.xml"` (from `GUIDE_URL` in `scripts/constants.ts`, merged in `Playlist.getGuideUrls()`).
+- `guide.xml` is generated at build time by the `Grab EPG` step in `.github/workflows/update.yml`, which clones `iptv-org/epg` and runs its grabber against `.github/epg/channels.xml`. It is served from `.gh-pages/` (gitignored; never committed).
+- `.github/epg/channels.xml` maps each stream `tvgId` (e.g. `3HD.th@SD`) to a source `site` + `site_id`. The EPG `<channel id>` must exactly equal the playlist `tvg-id`, including the `@feed` suffix, or players will not match.
+- **Risk:** the grabber depends on `gigatv.3bbtv.co.th` and `tv.trueid.net` staying online and unchanged. If either breaks, that site's channels lose guide data that run.
+- **Risk:** EPG grabbing adds several minutes per run (extra clone + `npm ci`). `continue-on-error: true` keeps a broken grab from failing the deploy.
+- **Risk:** if the grab produces no file, `guide.xml` returns 404 for clients. The `Ensure guide exists` step writes an empty `<tv></tv>` fallback.
+- **Maintenance:** adding/removing a channel in `streams/th.json` does not update the guide. Hand-add/remove the matching `<channel>` entries in `.github/epg/channels.xml`.
+- `3HD`, `Channel5` and `One31` have no `xmltv_id` upstream, so they only appear because `channels.xml` sets `xmltv_id` explicitly. Do not switch to `--sites=...` (it drops them and bloats the guide).
+- Upstream `guides.json` (in `temp/data/`) has no `sources` for Thailand, so the old API-driven `x-tvg-url` path yields nothing; this static guide is the only source.
+
 ## Code constraints
 
 - ESLint enforces **CRLF line endings** (`@stylistic/linebreak-style: windows`), single quotes, no semicolons. New files written with LF fail `npm run lint`; convert with:

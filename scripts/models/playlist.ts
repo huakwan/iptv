@@ -1,4 +1,5 @@
 import { Collection } from '@freearhey/core'
+import { GUIDE_URL } from '../constants'
 import * as sdk from '@iptv-org/sdk'
 import { Stream } from '../models'
 
@@ -34,6 +35,8 @@ export class Playlist {
     }
 
     const urls = new Collection<string>()
+
+    if (GUIDE_URL) urls.add(GUIDE_URL)
 
     this.getGuides().forEach((guide: sdk.Models.Guide) => {
       const sources = new Collection(guide.sources)

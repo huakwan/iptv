@@ -23,6 +23,25 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm install
+      - name: Checkout EPG grabber
+        uses: actions/checkout@v4
+        with:
+          repository: iptv-org/epg
+          path: .epg
+      - name: Install EPG dependencies
+        run: npm install --no-audit --no-fund
+        working-directory: .epg
+      - name: Grab EPG
+        continue-on-error: true
+        working-directory: .epg
+        run: |
+          mkdir -p "${{ github.workspace }}/.gh-pages"
+          npm run grab -- --channels=${{ github.workspace }}/.github/epg/channels.xml --output=${{ github.workspace }}/.gh-pages/guide.xml
+      - name: Ensure guide exists
+        run: |
+          if [ ! -s .gh-pages/guide.xml ]; then
+            printf '<?xml version="1.0" encoding="UTF-8"?>\n<tv></tv>\n' > .gh-pages/guide.xml
+          fi
       - name: Generate playlists
         run: npm run playlist:generate
       - name: Setup Pages
