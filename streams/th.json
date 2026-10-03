@@ -82,5 +82,17 @@
     "name": "Nation TV",
     "group": "News",
     "url": "https://live-us1.thaimomo.com/live-as/chNation-3/playlist.m3u8"
+  },
+  {
+    "tvgId": "NBT2HD.th@SD",
+    "name": "NBT 2 HD",
+    "group": "General",
+    "url": "https://cdn-edge.iiptvcdn.com/live_event/smil:f180-054a-38d7-ce66-f7cf.smil/playlist.m3u8"
+  },
+  {
+    "tvgId": "TNN16.th@SD",
+    "name": "TNN 16",
+    "group": "News",
+    "url": "https://live-us1.thaimomo.com/live-as/chtnn24-2/playlist.m3u8"
   }
 ]

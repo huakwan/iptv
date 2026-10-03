@@ -21,7 +21,7 @@ Thailand-only fork of [iptv-org/iptv](https://github.com/iptv-org/iptv). Generat
 
 - **`streams/th.json` is the only file to edit by hand.** It feeds `streams/th.m3u` (generated, gitignored via `/streams/*.m3u`).
 - Entry fields: `tvgId` (required), `name` (required), `url` (required), `group`, `labels`, `userAgent`, `referrer`.
-- Adding/removing a channel = edit `streams/th.json`, then `npm run playlist:generate`.
+- Adding/removing a channel = edit `streams/th.json`, then `npm run playlist:generate`. When adding, always do the EPG mapping in `.github/epg/channels.xml` in the same change; when removing, delete the matching `<channel>` entries.
 
 ## Playlist gotchas (verify before assuming)
 
@@ -38,7 +38,7 @@ Thailand-only fork of [iptv-org/iptv](https://github.com/iptv-org/iptv). Generat
 - **Risk:** the grabber depends on `gigatv.3bbtv.co.th` and `tv.trueid.net` staying online and unchanged. If either breaks, that site's channels lose guide data that run.
 - **Risk:** EPG grabbing adds several minutes per run (extra clone + `npm ci`). `continue-on-error: true` keeps a broken grab from failing the deploy.
 - **Risk:** if the grab produces no file, `guide.xml` returns 404 for clients. The `Ensure guide exists` step writes an empty `<tv></tv>` fallback.
-- **Maintenance:** adding/removing a channel in `streams/th.json` does not update the guide. Hand-add/remove the matching `<channel>` entries in `.github/epg/channels.xml`.
+- **Maintenance:** every channel change must be done as a set. When adding a stream to `streams/th.json`, add the matching `<channel>` entry to `.github/epg/channels.xml` in the same change (find the source `site` + `site_id` in `iptv-org/epg` `sites/*/*.channels.xml`). When removing a stream, delete its `<channel>` entries. A stream with no EPG mapping will still play but show no guide.
 - `3HD`, `Channel5` and `One31` have no `xmltv_id` upstream, so they only appear because `channels.xml` sets `xmltv_id` explicitly. Do not switch to `--sites=...` (it drops them and bloats the guide).
 - Most channels map to two sources, so the raw grab emits each timeslot twice (overlapping entries in players). The `Deduplicate EPG` step runs `npm run epg:dedupe`, which keeps one `<programme>` per `channel`+`start` (longest title wins) and one `<channel>` per id.
 - Upstream `guides.json` (in `temp/data/`) has no `sources` for Thailand, so the old API-driven `x-tvg-url` path yields nothing; this static guide is the only source.
