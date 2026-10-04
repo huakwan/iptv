@@ -13,9 +13,9 @@
   },
   {
     "tvgId": "Channel7.th@SD",
-    "name": "Channel 7",
+    "name": "Channel 7 HD",
     "group": "General",
-    "url": "https://live-us1.thaimomo.com/live-as/ch7hd-3/playlist.m3u8"
+    "url": "https://live-cdn.ch7.com/out/v1/eafeb02c55b64a15b278b1e66c7fc776/playlist_9.m3u8"
   },
   {
     "tvgId": "Channel8.th@SD",
@@ -82,6 +82,36 @@
     "name": "Nation TV",
     "group": "News",
     "url": "https://live-us1.thaimomo.com/live-as/chNation-3/playlist.m3u8"
+  },
+  {
+    "tvgId": "NBT2HD.th@SD",
+    "name": "NBT 2 HD",
+    "group": "General",
+    "url": "https://cdn-edge.iiptvcdn.com/live_event/smil:f180-054a-38d7-ce66-f7cf.smil/playlist.m3u8"
+  },
+  {
+    "tvgId": "NBT11.th@Central",
+    "name": "NBT 11 Central",
+    "group": "General",
+    "url": "https://cdn-edge.iiptvcdn.com/live_event/smil:6ee0-5126-0cee-7ba2-18b7.smil/playlist.m3u8"
+  },
+  {
+    "tvgId": "PPTV.th@SD",
+    "name": "PPTV HD 36",
+    "group": "General",
+    "url": "https://live-us1.thaimomo.com/live-as/chpptv-3/playlist.m3u8"
+  },
+  {
+    "tvgId": "CharoenCable37TV.th@SD",
+    "name": "Charoen Cable 37 TV",
+    "group": "General",
+    "url": "http://www5.cabletv.co.th/StreamToCTV/cablechannel/playlist.m3u8"
+  },
+  {
+    "tvgId": "VipaTV.th@SD",
+    "name": "Vipa TV",
+    "group": "General",
+    "url": "https://fastly.live.brightcove.com/1846248737588002042/ap-southeast-1/6075037809001/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJob3N0IjoibzRoaGc2LmVncmVzcy5zYjBmOGsiLCJhY2NvdW50X2lkIjoiNjA3NTAzNzgwOTAwMSIsImVobiI6ImZhc3RseS5saXZlLmJyaWdodGNvdmUuY29tIiwiaXNzIjoiYmxpdmUtcGxheWJhY2stc291cmNlLWFwaSIsInN1YiI6InBhdGhtYXB0b2tlbiIsImF1ZCI6WyI2MDc1MDM3ODA5MDAxIl0sImp0aSI6IjE4NDYyNDg3Mzc1ODgwMDIwNDIifQ.HbjGHxGv87ivAdsCtAdEDjj2SVCfRnCUMYWn2fCkVPY/playlist-hls.m3u8"
   },
   {
     "tvgId": "TSports7.th@SD",

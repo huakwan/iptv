@@ -14,6 +14,8 @@
   <channel site="gigatv.3bbtv.co.th" site_id="34" lang="th" xmltv_id="AmarinTV.th@SD">Amarin TV</channel>
   <channel site="gigatv.3bbtv.co.th" site_id="7" lang="th" xmltv_id="TSports7.th@SD">T Sports 7</channel>
   <channel site="gigatv.3bbtv.co.th" site_id="10" lang="th" xmltv_id="ThaiParliamentTelevision.th@SD">TPTV</channel>
+  <channel site="gigatv.3bbtv.co.th" site_id="2" lang="th" xmltv_id="NBT11.th@Central">NBT 11 Central</channel>
+  <channel site="gigatv.3bbtv.co.th" site_id="36" lang="th" xmltv_id="PPTV.th@SD">PPTV HD</channel>
   <!-- tv.trueid.net -->
   <channel site="tv.trueid.net" site_id="thaipbs" lang="th" xmltv_id="ThaiPBS.th@SD">Thai PBS</channel>
   <channel site="tv.trueid.net" site_id="nationtv" lang="th" xmltv_id="NationTV.th@SD">Nation TV</channel>
@@ -30,4 +32,6 @@
   <channel site="tv.trueid.net" site_id="ch8" lang="th" xmltv_id="Channel8.th@SD">Channel 8</channel>
   <channel site="tv.trueid.net" site_id="t-sports-7-sd" lang="th" xmltv_id="TSports7.th@SD">T Sports 7</channel>
   <channel site="tv.trueid.net" site_id="rama-channel" lang="th" xmltv_id="RamaChannel.th@SD">Rama Channel</channel>
+  <channel site="tv.trueid.net" site_id="nbt" lang="th" xmltv_id="NBT2HD.th@SD">NBT 2 HD</channel>
+  <channel site="tv.trueid.net" site_id="pptv-hd" lang="th" xmltv_id="PPTV.th@SD">PPTV HD</channel>
 </channels>

@@ -4,7 +4,7 @@
 
 ## ที่มา
 
-โปรเจกต์นี้ fork มาจาก [iptv-org/iptv](https://github.com/iptv-org/iptv) ซึ่งรวบรวมลิงก์สตรีมสาธารณะทั่วโลก แต่เวอร์ชันนี้ **ตัดให้เหลือเฉพาะช่องไทยจำนวนหนึ่ง** ที่ทดสอบแล้วว่าเล่นได้ (ปัจจุบัน 20 ช่อง) โดยแก้ไขจากรายการใน [`streams/th.json`](streams/th.json) เท่านั้น ไม่ได้ตั้งใจทำเป็นคลังช่องครบทุกช่องเหมือนต้นทาง
+โปรเจกต์นี้ fork มาจาก [iptv-org/iptv](https://github.com/iptv-org/iptv) ซึ่งรวบรวมลิงก์สตรีมสาธารณะทั่วโลก แต่เวอร์ชันนี้ **ตัดให้เหลือเฉพาะช่องไทยจำนวนหนึ่ง** ที่ทดสอบแล้วว่าเล่นได้ (ปัจจุบัน 25 ช่อง) โดยแก้ไขจากรายการใน [`streams/th.json`](streams/th.json) เท่านั้น ไม่ได้ตั้งใจทำเป็นคลังช่องครบทุกช่องเหมือนต้นทาง
 
 ## การใช้งานกับ APTV (Apple CarPlay)
 
@@ -35,12 +35,18 @@ https://huakwan.github.io/iptv/guide.xml
 
 | หมวด | ช่อง |
 | --- | --- |
-| General | 3HD, Channel 5, Channel 7, Channel 8, MCOT HD, One 31, Rama Channel |
+| General | 3HD, Channel 5, Channel 7, Channel 8, MCOT HD, One 31, NBT 2 HD, NBT 11, PPTV, Charoen Cable 37 TV, Vipa TV, Rama Channel |
 | Entertainment | Workpoint TV, MONO 29, True4U, Amarin TV, GMM 25, Thai Chaiyo, Cool Channel, Good Idea TV |
-| News | Thai PBS, Thairath TV, Nation TV, Thai Parliament TV |
+| News | Thai PBS, Thairath TV, Nation TV, Thai Parliament Television |
 | Sports | T Sports 7 |
 
-หมายเหตุ: ลิงก์สตรีม IPTV ตายบ่อย หากช่องใดเล่นไม่ได้ ให้แจ้งผ่าน issue. ช่อง Good Idea TV ออกอากาศไม่ครบ 24 ชั่วโมง (ติดป้าย `[Not 24/7]`) และใช้สตรีมผ่าน HTTP (พอร์ต 1935) เครื่องเล่นบางตัวโดยเฉพาะบน iOS/APTV อาจไม่เปิดให้
+หมายเหตุ: ลิงก์สตรีม IPTV ตายบ่อย หากช่องใดเล่นไม่ได้ ให้แจ้งผ่าน issue
+
+- **Good Idea TV** ออกอากาศไม่ครบ 24 ชั่วโมง (ติดป้าย `[Not 24/7]`) และใช้สตรีมผ่าน HTTP (พอร์ต 1935)
+- **Charoen Cable 37 TV** ใช้สตรีมผ่าน HTTP เท่านั้น (เซิร์ฟเวอร์ไม่มีใบรับรองที่ตรงกับโดเมน)
+- **Vipa TV** ใช้ลิงก์ Brightcove ที่ฝัง token ไว้ หากผู้ให้บริการหมุน token ลิงก์อาจใช้ไม่ได้และต้องอัปเดต
+
+เครื่องเล่นบางตัวโดยเฉพาะบน iOS/APTV อาจไม่เปิดให้เล่นสตรีม HTTP (ไม่เข้ารหัส)
 
 ## สำหรับนักพัฒนา
 
