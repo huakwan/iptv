@@ -5,7 +5,7 @@ import { loadData, data } from '../../api'
 import { Logger } from '@freearhey/core'
 import uniqueId from 'lodash.uniqueid'
 import { Stream } from '../../models'
-import { CountriesGenerator, IndexGenerator } from '../../generators'
+import { CountriesGenerator, IndexGenerator, WebGenerator } from '../../generators'
 import path from 'node:path'
 import fs from 'node:fs'
 
@@ -87,6 +87,9 @@ async function main() {
 
   logger.info('generating index.m3u...')
   await new IndexGenerator({ streams, logFile }).generate()
+
+  logger.info('generating tv/...')
+  await new WebGenerator({ streams, logFile }).generate()
 
   logger.info('saving generators.log...')
   const logStorage = new Storage(LOGS_DIR)

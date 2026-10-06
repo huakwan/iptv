@@ -1,0 +1,666 @@
+(function () {
+  'use strict'
+
+  var grid = document.getElementById('grid')
+  var status = document.getElementById('status')
+
+  var player = document.getElementById('player')
+  var stage = document.getElementById('stage')
+  var video = document.getElementById('video')
+  var loader = document.getElementById('loader')
+  var unmuteBtn = document.getElementById('unmute')
+  var controls = document.getElementById('controls')
+  var backBtn = document.getElementById('backBtn')
+  var barTitle = document.getElementById('barTitle')
+  var barLogo = document.getElementById('barLogo')
+  var epgBtn = document.getElementById('epgBtn')
+  var playBtn = document.getElementById('playBtn')
+  var playIcon = document.getElementById('playIcon')
+  var playLabel = document.getElementById('playLabel')
+  var epgPopup = document.getElementById('epgPopup')
+  var epgClose = document.getElementById('epgClose')
+  var epgList = document.getElementById('epgList')
+  var fallback = document.getElementById('fallback')
+  var errorMsg = document.getElementById('errorMsg')
+  var copyBtn = document.getElementById('copyBtn')
+  var retryBtn = document.getElementById('retryBtn')
+  var fallbackBack = document.getElementById('fallbackBack')
+
+  var channels = []
+  var epg = {}
+  var channel = null
+  var hls = null
+  var controlsTimer = null
+  var networkRetries = 0
+  var pushed = false
+  var loading = false
+
+  function param(name) {
+    return new URLSearchParams(window.location.search).get(name)
+  }
+
+  function findChannel(tvgId) {
+    for (var i = 0; i < channels.length; i++) {
+      if (channels[i].tvgId === tvgId) return channels[i]
+    }
+    return null
+  }
+
+  function decodeEntities(value) {
+    if (!value) return ''
+    var doc = new DOMParser().parseFromString('<body>' + value + '</body>', 'text/html')
+    return doc.body.textContent || ''
+  }
+
+  function formatTime(ms) {
+    return new Date(ms).toLocaleTimeString('th-TH', {
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  /* ---------- Fullscreen helpers ---------- */
+
+  function fsElement() {
+    return document.fullscreenElement || document.webkitFullscreenElement || null
+  }
+
+  function requestFullscreen(el) {
+    var fn = el.requestFullscreen || el.webkitRequestFullscreen
+    if (!fn) return
+    try {
+      var result = fn.call(el)
+      if (result && result.catch) result.catch(function () {})
+    } catch {
+      /* element fullscreen unsupported: CSS overlay still fills the screen */
+    }
+  }
+
+  function exitFullscreen() {
+    var fn = document.exitFullscreen || document.webkitExitFullscreen
+    if (!fn) return
+    try {
+      var result = fn.call(document)
+      if (result && result.catch) result.catch(function () {})
+    } catch {
+      /* ignore */
+    }
+  }
+
+  /* ---------- Controls overlay ---------- */
+
+  function syncPlayIcon() {
+    playIcon.className = video.paused ? 'icon-play' : 'icon-pause'
+    playLabel.textContent = video.paused ? 'Play' : 'Pause'
+  }
+
+  function hideControls() {
+    if (!epgPopup.hidden) return
+    controls.hidden = true
+    if (loader) loader.classList.add('is-center')
+    clearTimeout(controlsTimer)
+    controlsTimer = null
+  }
+
+  function restartControlsTimer() {
+    clearTimeout(controlsTimer)
+    controlsTimer = null
+    if (loading || video.paused) return
+    controlsTimer = setTimeout(hideControls, 4000)
+  }
+
+  function showControls() {
+    controls.hidden = false
+    if (loader) loader.classList.remove('is-center')
+    restartControlsTimer()
+  }
+
+  function toggleControls() {
+    if (controls.hidden) {
+      showControls()
+    } else {
+      hideControls()
+    }
+  }
+
+  /* ---------- Playback ---------- */
+
+  function showLoader() {
+    if (loader) loader.hidden = false
+  }
+
+  function hideLoader() {
+    if (loader) loader.hidden = true
+  }
+
+  function warmUpHost(url) {
+    try {
+      var origin = new URL(url, window.location.href).origin
+      if (!origin || origin === window.location.origin) return
+      var link = document.createElement('link')
+      link.rel = 'preconnect'
+      link.href = origin
+      link.crossOrigin = 'anonymous'
+      document.head.appendChild(link)
+    } catch {
+      /* ignore malformed stream url */
+    }
+  }
+
+  function showFallback(message) {
+    loading = false
+    hideLoader()
+    errorMsg.textContent = message
+    fallback.hidden = false
+  }
+
+  function tryPlay() {
+    video.muted = false
+    var attempt = video.play()
+    if (attempt && attempt.catch) {
+      attempt.catch(function (err) {
+        if (!err || err.name === 'NotAllowedError') unmuteBtn.hidden = false
+      })
+    }
+  }
+
+  function loadHlsScript() {
+    return new Promise(function (resolve, reject) {
+      if (window.Hls) return resolve()
+
+      var script = document.createElement('script')
+      script.src = 'https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js'
+      script.async = true
+      script.dataset.hls = 'true'
+      script.onload = resolve
+      script.onerror = reject
+      document.head.appendChild(script)
+    })
+  }
+
+  function attachHls(url) {
+    networkRetries = 0
+    hls = new window.Hls({
+      lowLatencyMode: false,
+      startLevel: 0,
+      maxBufferLength: 8,
+      maxMaxBufferLength: 20,
+      backBufferLength: 30,
+      abrEwmaDefaultEstimate: 500000,
+      enableWorker: true,
+      initialLiveManifestSize: 1,
+      liveSyncDurationCount: 2,
+      manifestLoadingMaxRetry: 2,
+      manifestLoadingRetryDelay: 500,
+      levelLoadingMaxRetry: 2,
+      fragLoadingMaxRetry: 2
+    })
+    hls.attachMedia(video)
+    hls.on(window.Hls.Events.MANIFEST_PARSED, function () {
+      if (video.paused) tryPlay()
+    })
+    hls.loadSource(url)
+    hls.on(window.Hls.Events.ERROR, function (event, data) {
+      if (!data || !data.fatal) return
+      switch (data.type) {
+        case window.Hls.ErrorTypes.NETWORK_ERROR:
+          if (networkRetries < 1) {
+            networkRetries++
+            hls.startLoad()
+          } else {
+            hls.destroy()
+            hls = null
+            showFallback(
+              'เล่นช่องนี้ไม่ได้ สตรีมอาจไม่ให้สิทธิ์ CORS (เกิดกับ Chrome/Edge) หรือลิงก์หมดอายุ ลองเปิดใน Safari, APTV หรือ VLC'
+            )
+          }
+          break
+        case window.Hls.ErrorTypes.MEDIA_ERROR:
+          hls.recoverMediaError()
+          break
+        default:
+          hls.destroy()
+          hls = null
+          showFallback('เล่นช่องนี้ไม่ได้ในเบราว์เซอร์ (อาจติด CORS หรือลิงก์หมดอายุ)')
+      }
+    })
+  }
+
+  function resetPlayback() {
+    loading = false
+    hideLoader()
+    if (hls) {
+      hls.destroy()
+      hls = null
+    }
+    video.pause()
+    video.removeAttribute('src')
+    try {
+      video.load()
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function retryPlayback() {
+    if (!channel) return
+    resetPlayback()
+    fallback.hidden = true
+    errorMsg.textContent = ''
+    showControls()
+    startPlayback(channel.url)
+  }
+
+  function startPlayback(url) {
+    if (window.location.protocol === 'https:' && url.indexOf('http://') === 0) {
+      showFallback('ช่องนี้ใช้สตรีม HTTP เบราว์เซอร์จึงบล็อกบนหน้า HTTPS')
+      return
+    }
+
+    showLoader()
+    warmUpHost(url)
+    loading = true
+    showControls()
+
+    if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = url
+      tryPlay()
+      return
+    }
+
+    if (window.Hls && window.Hls.isSupported()) {
+      attachHls(url)
+      return
+    }
+
+    loadHlsScript()
+      .then(function () {
+        if (window.Hls && window.Hls.isSupported()) {
+          attachHls(url)
+        } else {
+          showFallback('เบราว์เซอร์นี้ไม่รองรับการเล่น HLS')
+        }
+      })
+      .catch(function () {
+        showFallback('โหลดตัวเล่นไม่สำเร็จ ลองรีเฟรชอีกครั้ง')
+      })
+  }
+
+  /* ---------- EPG popup ---------- */
+
+  function buildEpgRow(programme, isNow) {
+    var row = document.createElement('div')
+    row.className = 'epg-item' + (isNow ? ' is-now' : '')
+
+    var time = document.createElement('span')
+    time.className = 'epg-item-time'
+    time.textContent = formatTime(programme.start) + ' - ' + formatTime(programme.stop)
+
+    var body = document.createElement('div')
+    body.className = 'epg-item-body'
+
+    var title = document.createElement('strong')
+    title.textContent = decodeEntities(programme.title) || 'ไม่ทราบชื่อรายการ'
+    body.appendChild(title)
+
+    if (programme.desc) {
+      var desc = document.createElement('p')
+      desc.className = 'muted small'
+      desc.textContent = decodeEntities(programme.desc)
+      body.appendChild(desc)
+    }
+
+    row.appendChild(time)
+    row.appendChild(body)
+
+    if (isNow) {
+      var badge = document.createElement('span')
+      badge.className = 'epg-item-badge'
+      badge.textContent = 'กำลังออกอากาศ'
+      row.appendChild(badge)
+    }
+
+    return row
+  }
+
+  function renderEpgList() {
+    epgList.innerHTML = ''
+    if (!channel) return
+
+    var list = epg[channel.tvgId] || []
+    if (!list.length) {
+      var empty = document.createElement('p')
+      empty.className = 'muted epg-popup-empty'
+      empty.textContent = 'ไม่มีข้อมูลผังรายการสำหรับช่องนี้'
+      epgList.appendChild(empty)
+      return
+    }
+
+    var now = Date.now()
+    var fragment = document.createDocumentFragment()
+    for (var i = 0; i < list.length; i++) {
+      fragment.appendChild(buildEpgRow(list[i], list[i].start <= now && now < list[i].stop))
+    }
+    epgList.appendChild(fragment)
+
+    var nowRow = epgList.querySelector('.is-now')
+    if (nowRow && nowRow.scrollIntoView) {
+      nowRow.scrollIntoView({ block: 'center' })
+    }
+  }
+
+  function openEpgPopup() {
+    epgPopup.hidden = false
+    renderEpgList()
+    controls.hidden = false
+    clearTimeout(controlsTimer)
+    controlsTimer = null
+  }
+
+  function closeEpgPopup() {
+    epgPopup.hidden = true
+    showControls()
+  }
+
+  /* ---------- Player lifecycle ---------- */
+
+  function openPlayer(target, withFullscreen) {
+    channel = target
+    document.title = channel.name + ' - ทีวีฟรี'
+    barTitle.textContent = channel.name
+
+    if (channel.logo) {
+      barLogo.src = channel.logo
+      barLogo.hidden = false
+    } else {
+      barLogo.hidden = true
+      barLogo.removeAttribute('src')
+    }
+
+    fallback.hidden = true
+    errorMsg.textContent = ''
+    epgPopup.hidden = true
+    unmuteBtn.hidden = true
+
+    player.hidden = false
+    showControls()
+    showLoader()
+    syncPlayIcon()
+
+    if (withFullscreen) requestFullscreen(stage)
+
+    startPlayback(channel.url)
+    renderEpgList()
+  }
+
+  function closePlayer() {
+    if (!channel) return
+
+    resetPlayback()
+    clearTimeout(controlsTimer)
+    controlsTimer = null
+
+    channel = null
+    epgPopup.hidden = true
+    controls.hidden = true
+    unmuteBtn.hidden = true
+    fallback.hidden = true
+    player.hidden = true
+    document.title = 'ทีวีฟรี'
+
+    if (fsElement()) exitFullscreen()
+  }
+
+  function goBack() {
+    if (pushed) {
+      history.back()
+    } else {
+      history.replaceState({}, '', 'index.html')
+      closePlayer()
+    }
+  }
+
+  /* ---------- List page ---------- */
+
+  function initials(name) {
+    return (name || '?').trim().charAt(0).toUpperCase()
+  }
+
+  function createCard(item) {
+    var link = document.createElement('a')
+    link.className = 'card'
+    link.href = '?tvgId=' + encodeURIComponent(item.tvgId)
+    link.dataset.tvgId = item.tvgId
+
+    var thumb = document.createElement('div')
+    thumb.className = 'thumb'
+
+    if (item.logo) {
+      var img = document.createElement('img')
+      img.loading = 'lazy'
+      img.decoding = 'async'
+      img.referrerPolicy = 'no-referrer'
+      img.alt = item.name
+      img.src = item.logo
+      img.addEventListener('error', function () {
+        img.remove()
+        thumb.classList.add('thumb-fallback')
+        thumb.textContent = initials(item.name)
+      })
+      thumb.appendChild(img)
+    } else {
+      thumb.classList.add('thumb-fallback')
+      thumb.textContent = initials(item.name)
+    }
+
+    var title = document.createElement('span')
+    title.className = 'card-title'
+    title.textContent = item.name
+
+    link.appendChild(thumb)
+    link.appendChild(title)
+
+    link.addEventListener('click', function (event) {
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+      if (event.button && event.button !== 0) return
+
+      var target = findChannel(item.tvgId)
+      if (!target) return
+
+      event.preventDefault()
+      history.pushState({ tvgId: item.tvgId }, '', '?tvgId=' + encodeURIComponent(item.tvgId))
+      pushed = true
+      openPlayer(target, true)
+    })
+
+    return link
+  }
+
+  function loadChannels() {
+    return fetch('channels.json')
+      .then(function (response) {
+        if (!response.ok) throw new Error('HTTP ' + response.status)
+        return response.json()
+      })
+      .then(function (data) {
+        channels = Array.isArray(data) ? data : []
+      })
+  }
+
+  function loadEpg() {
+    fetch('epg.json')
+      .then(function (response) {
+        return response.ok ? response.json() : {}
+      })
+      .catch(function () {
+        return {}
+      })
+      .then(function (data) {
+        epg = data || {}
+        if (channel) renderEpgList()
+      })
+  }
+
+  function renderGrid() {
+    if (!channels.length) {
+      status.textContent = 'ยังไม่มีช่องในขณะนี้'
+      return
+    }
+
+    var fragment = document.createDocumentFragment()
+    channels.forEach(function (item) {
+      fragment.appendChild(createCard(item))
+    })
+    grid.appendChild(fragment)
+    grid.hidden = false
+    status.hidden = true
+  }
+
+  /* ---------- Events ---------- */
+
+  stage.addEventListener('click', function (event) {
+    if (event.target.closest('.controls')) return
+    if (event.target.closest('.epg-popup')) return
+    if (event.target.closest('.fallback')) return
+    if (event.target.closest('.unmute')) return
+    toggleControls()
+  })
+
+  backBtn.addEventListener('click', function (event) {
+    event.stopPropagation()
+    goBack()
+  })
+
+  epgBtn.addEventListener('click', function (event) {
+    event.stopPropagation()
+    if (epgPopup.hidden) openEpgPopup()
+    else closeEpgPopup()
+  })
+
+  epgClose.addEventListener('click', function (event) {
+    event.stopPropagation()
+    closeEpgPopup()
+  })
+
+  epgPopup.addEventListener('click', function (event) {
+    if (event.target === epgPopup) closeEpgPopup()
+  })
+
+  playBtn.addEventListener('click', function (event) {
+    event.stopPropagation()
+    if (video.paused) {
+      video.play()
+    } else {
+      video.pause()
+      loading = false
+      hideLoader()
+      showControls()
+    }
+    syncPlayIcon()
+    restartControlsTimer()
+  })
+
+  barLogo.addEventListener('error', function () {
+    barLogo.hidden = true
+  })
+
+  unmuteBtn.addEventListener('click', function (event) {
+    event.stopPropagation()
+    unmuteBtn.hidden = true
+    tryPlay()
+  })
+
+  video.addEventListener('play', syncPlayIcon)
+  video.addEventListener('pause', syncPlayIcon)
+  video.addEventListener('playing', function () {
+    var wasLoading = loading
+    loading = false
+    hideLoader()
+    syncPlayIcon()
+    if (wasLoading) {
+      hideControls()
+    } else {
+      restartControlsTimer()
+    }
+  })
+  video.addEventListener('canplay', hideLoader)
+  video.addEventListener('timeupdate', function () {
+    if (!video.paused && video.readyState >= 3) hideLoader()
+  })
+  video.addEventListener('waiting', function () {
+    if (channel && fallback.hidden && !video.paused && video.readyState < 3) showLoader()
+  })
+  video.addEventListener('stalled', function () {
+    if (channel && fallback.hidden && !video.paused && video.readyState < 3) showLoader()
+  })
+  video.addEventListener('error', function () {
+    hideLoader()
+    if (!video.getAttribute('src')) return
+    showFallback(
+      'เล่นช่องนี้ไม่ได้ สตรีมอาจไม่ให้สิทธิ์ CORS (เกิดกับ Chrome/Edge) หรือลิงก์หมดอายุ ลองเปิดใน Safari, APTV หรือ VLC'
+    )
+  })
+
+  copyBtn.addEventListener('click', function () {
+    if (!channel) return
+    var done = function () {
+      copyBtn.textContent = 'คัดลอกแล้ว'
+      setTimeout(function () {
+        copyBtn.textContent = 'คัดลอกลิงก์สตรีม'
+      }, 2000)
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(channel.url).then(done, done)
+    } else {
+      done()
+    }
+  })
+
+  retryBtn.addEventListener('click', function (event) {
+    event.stopPropagation()
+    retryPlayback()
+  })
+
+  fallbackBack.addEventListener('click', function (event) {
+    event.stopPropagation()
+    goBack()
+  })
+
+  function onFullscreenChange() {
+    if (!fsElement() && channel) goBack()
+  }
+
+  document.addEventListener('fullscreenchange', onFullscreenChange)
+  document.addEventListener('webkitfullscreenchange', onFullscreenChange)
+
+  window.addEventListener('popstate', function () {
+    pushed = false
+    closePlayer()
+  })
+
+  window.addEventListener('beforeunload', function () {
+    if (hls) hls.destroy()
+    clearTimeout(controlsTimer)
+  })
+
+  /* ---------- Init ---------- */
+
+  loadEpg()
+
+  loadChannels()
+    .then(function () {
+      renderGrid()
+
+      var tvgId = param('tvgId')
+      if (!tvgId) return
+
+      var target = findChannel(tvgId)
+      if (!target) return
+      history.replaceState({ tvgId: tvgId }, '', '?tvgId=' + encodeURIComponent(tvgId))
+      pushed = false
+      openPlayer(target, false)
+    })
+    .catch(function () {
+      status.textContent = 'โหลดรายการช่องไม่สำเร็จ ลองรีเฟรชอีกครั้ง'
+    })
+})()
