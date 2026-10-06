@@ -366,7 +366,7 @@
 
   function openPlayer(target, withFullscreen) {
     channel = target
-    document.title = channel.name + ' - ทีวีฟรี'
+    document.title = channel.name + ' - HK IPTV'
     barTitle.textContent = channel.name
 
     if (channel.logo) {
@@ -406,7 +406,7 @@
     unmuteBtn.hidden = true
     fallback.hidden = true
     player.hidden = true
-    document.title = 'ทีวีฟรี'
+    document.title = 'ดูทีวีออนไลน์ - HK IPTV'
 
     if (fsElement()) exitFullscreen()
   }
