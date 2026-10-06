@@ -30,6 +30,7 @@
   var epg = {}
   var channel = null
   var hls = null
+  var tierBlobUrl = null
   var controlsTimer = null
   var networkRetries = 0
   var pushed = false
@@ -37,6 +38,13 @@
 
   function param(name) {
     return new URLSearchParams(window.location.search).get(name)
+  }
+
+  function isIOS() {
+    return (
+      /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    )
   }
 
   function findChannel(tvgId) {
@@ -178,6 +186,57 @@
     })
   }
 
+  /* ---------- Multi-tier ABR for thaimomo ---------- */
+
+  var TIER_RE = /^(https:\/\/live-us1\.thaimomo\.com\/live-as\/[A-Za-z0-9]+)-\d+(\/playlist\.m3u8)$/
+
+  function fetchText(url) {
+    return fetch(url, { mode: 'cors', cache: 'no-store' })
+      .then(function (response) {
+        return response.ok ? response.text() : null
+      })
+      .catch(function () {
+        return null
+      })
+  }
+
+  function buildTierMaster(url) {
+    var match = url.match(TIER_RE)
+    if (!match) return Promise.resolve(null)
+
+    var base = match[1]
+    var suffix = match[2]
+    var tiers = [1, 2, 3]
+
+    return Promise.all(
+      tiers.map(function (tier) {
+        return fetchText(base + '-' + tier + suffix).then(function (text) {
+          if (!text) return null
+          var lines = text.split(/\r?\n/)
+          var inf = null
+          var file = null
+          for (var i = 0; i < lines.length; i++) {
+            var line = lines[i].trim()
+            if (!line) continue
+            if (line.indexOf('#EXT-X-STREAM-INF') === 0) inf = line
+            else if (line.charAt(0) !== '#') file = line
+          }
+          if (!inf || !file) return null
+          return { inf: inf, uri: base + '-' + tier + '/' + file }
+        })
+      })
+    ).then(function (variants) {
+      var valid = variants.filter(Boolean)
+      if (valid.length < 2) return null
+
+      var out = '#EXTM3U\n#EXT-X-VERSION:3\n'
+      for (var i = 0; i < valid.length; i++) {
+        out += valid[i].inf + '\n' + valid[i].uri + '\n'
+      }
+      return out
+    })
+  }
+
   function attachHls(url) {
     networkRetries = 0
     hls = new window.Hls({
@@ -186,14 +245,18 @@
       maxBufferLength: 8,
       maxMaxBufferLength: 20,
       backBufferLength: 30,
-      abrEwmaDefaultEstimate: 500000,
+      testBandwidth: false,
+      abrEwmaDefaultEstimate: 2000000,
       enableWorker: true,
       initialLiveManifestSize: 1,
-      liveSyncDurationCount: 2,
+      liveSyncDurationCount: 1,
       manifestLoadingMaxRetry: 2,
       manifestLoadingRetryDelay: 500,
-      levelLoadingMaxRetry: 2,
-      fragLoadingMaxRetry: 2
+      manifestLoadingTimeOut: 20000,
+      levelLoadingMaxRetry: 3,
+      levelLoadingTimeOut: 20000,
+      fragLoadingMaxRetry: 3,
+      fragLoadingTimeOut: 30000
     })
     hls.attachMedia(video)
     hls.on(window.Hls.Events.MANIFEST_PARSED, function () {
@@ -211,7 +274,7 @@
             hls.destroy()
             hls = null
             showFallback(
-              'เล่นช่องนี้ไม่ได้ สตรีมอาจไม่ให้สิทธิ์ CORS (เกิดกับ Chrome/Edge) หรือลิงก์หมดอายุ ลองเปิดใน Safari, APTV หรือ VLC'
+              'เล่นช่องนี้ในเบราว์เซอร์ไม่ได้ เพราะสตรีมต้นทางไม่ให้สิทธิ์ CORS (พบบ่อยกับ Chrome/Edge) กด "คัดลอกลิงก์สตรีม" แล้วเปิดใน Safari, VLC หรือ APTV แทน'
             )
           }
           break
@@ -221,7 +284,9 @@
         default:
           hls.destroy()
           hls = null
-          showFallback('เล่นช่องนี้ไม่ได้ในเบราว์เซอร์ (อาจติด CORS หรือลิงก์หมดอายุ)')
+          showFallback(
+            'เล่นช่องนี้ในเบราว์เซอร์ไม่ได้ (สตรีมติด CORS หรือลิงก์หมดอายุ) กด "คัดลอกลิงก์สตรีม" แล้วเปิดใน Safari, VLC หรือ APTV แทน'
+          )
       }
     })
   }
@@ -229,6 +294,10 @@
   function resetPlayback() {
     loading = false
     hideLoader()
+    if (tierBlobUrl) {
+      URL.revokeObjectURL(tierBlobUrl)
+      tierBlobUrl = null
+    }
     if (hls) {
       hls.destroy()
       hls = null
@@ -253,7 +322,9 @@
 
   function startPlayback(url) {
     if (window.location.protocol === 'https:' && url.indexOf('http://') === 0) {
-      showFallback('ช่องนี้ใช้สตรีม HTTP เบราว์เซอร์จึงบล็อกบนหน้า HTTPS')
+      showFallback(
+        'ช่องนี้ใช้สตรีม HTTP จึงเล่นบนหน้า HTTPS ไม่ได้ กด "คัดลอกลิงก์สตรีม" แล้วเปิดใน VLC หรือ APTV แทน'
+      )
       return
     }
 
@@ -262,27 +333,51 @@
     loading = true
     showControls()
 
-    if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    var playNative = function () {
       video.src = url
       tryPlay()
+    }
+
+    var playWithHls = function () {
+      buildTierMaster(url).then(function (master) {
+        if (!channel) return
+        if (master) {
+          tierBlobUrl = URL.createObjectURL(
+            new Blob([master], { type: 'application/vnd.apple.mpegurl' })
+          )
+          attachHls(tierBlobUrl)
+        } else {
+          attachHls(url)
+        }
+      })
+    }
+
+    if (isIOS() && video.canPlayType('application/vnd.apple.mpegurl')) {
+      playNative()
       return
     }
 
     if (window.Hls && window.Hls.isSupported()) {
-      attachHls(url)
+      playWithHls()
       return
     }
 
     loadHlsScript()
       .then(function () {
         if (window.Hls && window.Hls.isSupported()) {
-          attachHls(url)
+          playWithHls()
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          playNative()
         } else {
           showFallback('เบราว์เซอร์นี้ไม่รองรับการเล่น HLS')
         }
       })
       .catch(function () {
-        showFallback('โหลดตัวเล่นไม่สำเร็จ ลองรีเฟรชอีกครั้ง')
+        if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          playNative()
+        } else {
+          showFallback('โหลดตัวเล่นไม่สำเร็จ ลองรีเฟรชอีกครั้ง')
+        }
       })
   }
 
@@ -597,7 +692,7 @@
     hideLoader()
     if (!video.getAttribute('src')) return
     showFallback(
-      'เล่นช่องนี้ไม่ได้ สตรีมอาจไม่ให้สิทธิ์ CORS (เกิดกับ Chrome/Edge) หรือลิงก์หมดอายุ ลองเปิดใน Safari, APTV หรือ VLC'
+      'เล่นช่องนี้ในเบราว์เซอร์ไม่ได้ สตรีมอาจติด CORS หรือลิงก์หมดอายุ กด "คัดลอกลิงก์สตรีม" แล้วเปิดใน Safari, VLC หรือ APTV แทน'
     )
   })
 
