@@ -16,6 +16,7 @@
    ```
 
    ใช้ลิงก์ `https://huakwan.github.io/iptv/index.m3u` ก็ได้ ผลลัพธ์เหมือนกัน (มีช่องไทยชุดเดียวกัน)
+
 3. บันทึกแล้วรอ APTV ดึงข้อมูลช่อง
 4. เชื่อมต่อกับระบบ Apple CarPlay แล้วเปิด APTV จะเห็นรายการช่องในหน้ารถ
 
@@ -31,34 +32,24 @@ https://huakwan.github.io/iptv/guide.xml
 
 ข้อมูล EPG สร้างจากสองแหล่งคือ `gigatv.3bbtv.co.th` และ `tv.trueid.net` ถ้าแหล่งใดล่ม ช่องของแหล่งนั้นจะไม่มีผังในรอบนั้น แต่ยังเล่นสตรีมได้ตามปกติ
 
-## ดูผ่านเว็บ (มือถือ / iPad)
+## ดูผ่านเว็บ
 
-นอกจากใช้กับ APTV แล้ว ยังมีหน้าเว็บสำหรับดูทีวีฟรีบนเบราว์เซอร์ รองรับมือถือและ iPad
+มีหน้าเว็บดูทีวีในตัว ไว้ใช้กับแอพ APTV ที่มีเว็บบราวเซอร์อยู่ข้างใน จึงเปิดดูทีวีระหว่างรถเคลื่อนที่ได้
 
-- หน้าแรก: [https://huakwan.github.io/iptv/tv/](https://huakwan.github.io/iptv/tv/) แสดงรายการช่องทั้งหมด มีช่องค้นหาและตัวกรองหมวด
-- เมื่อแตะช่องจะเปิดหน้าเล่นแบบเต็มจอทันที แตะที่จอหนึ่งครั้งเพื่อแสดงปุ่มควบคุม (เล่น/หยุด, ผังรายการ, กลับ) แล้วซ่อนเองใน 4 วินาที
-- ปุ่ม **ผังรายการ** เปิดป๊อปอัปแสดงผังรายการทั้งวันของช่องนั้นทับหน้าเล่น โดยไฮไลต์รายการที่กำลังออกอากาศ
-- ปุ่ม **กลับ** ออกจากโหมดเต็มจอและกลับไปหน้ารายการช่อง
-- บน iPhone Safari ยังซ่อนแถบที่อยู่ของเบราว์เซอร์ไม่ได้ (เบราว์เซอร์ไม่รองรับ fullscreen สำหรับ element) แต่ตัวเล่นจะขยายเต็มหน้าจออยู่แล้ว
-
+- หน้าแรก: [https://huakwan.github.io/iptv/tv/](https://huakwan.github.io/iptv/tv/)
 - เข้า [https://huakwan.github.io/iptv/](https://huakwan.github.io/iptv/) จะเปลี่ยนเส้นทางไปหน้า `tv/` อัตโนมัติ
+- แตะช่องเพื่อเล่นเต็มจอ มีปุ่มควบคุม (กลับ, เล่น/หยุด, ผังรายการ) และปุ่ม **คัดลอกลิงก์สตรีม** สำหรับเปิดต่อใน APTV/VLC
 
-ข้อจำกัดบนเว็บเบราว์เซอร์:
-
-- ช่องที่สตรีมผ่าน HTTP (Charoen Cable 37 TV, Good Idea TV) เล่นไม่ได้บนหน้า HTTPS เพราะเบราว์เซอร์บล็อก mixed content
-- ช่องที่ต้องใช้ `Referer` หรือ `User-Agent` เบราว์เซอร์ตั้งค่าให้ไม่ได้ อาจเล่นไม่ได้ ให้เปิดผ่าน APTV หรือ VLC แทน
-- บางเบราว์เซอร์ (เช่น Chrome) ต้องให้เซิร์ฟเวอร์สตรีมส่ง header CORS จึงจะเล่นได้ ส่วน Safari บน iPhone/iPad เล่น HLS ได้โดยตรง
-
-ลิงก์เพลย์ลิสต์เดิมยังใช้งานได้ตามปกติ: `countries/th.m3u`, `index.m3u` และ `guide.xml`
+ข้อจำกัด: ช่องที่สตรีมผ่าน HTTP หรือต้องใช้ `Referer`/`User-Agent` อาจเล่นไม่ได้บนเบราว์เซอร์ ให้เปิดผ่าน APTV หรือ VLC แทน
 
 ## ช่องที่มีในเพลย์ลิสต์
 
-| หมวด | ช่อง |
-| --- | --- |
-| General | 3HD, Channel 5, Channel 7, Channel 8, MCOT HD, One 31, NBT 2 HD, NBT 11, PPTV, Charoen Cable 37 TV, Vipa TV, Rama Channel |
-| Entertainment | Workpoint TV, MONO 29, True4U, Amarin TV, GMM 25, Thai Chaiyo, Cool Channel, Good Idea TV |
-| News | Thai PBS, Thairath TV, Nation TV, Thai Parliament Television |
-| Sports | T Sports 7 |
+| หมวด          | ช่อง                                                                                                                      |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| General       | 3HD, Channel 5, Channel 7, Channel 8, MCOT HD, One 31, NBT 2 HD, NBT 11, PPTV, Charoen Cable 37 TV, Vipa TV, Rama Channel |
+| Entertainment | Workpoint TV, MONO 29, True4U, Amarin TV, GMM 25, Thai Chaiyo, Cool Channel, Good Idea TV                                 |
+| News          | Thai PBS, Thairath TV, Nation TV, Thai Parliament Television                                                              |
+| Sports        | T Sports 7                                                                                                                |
 
 หมายเหตุ: ลิงก์สตรีม IPTV ตายบ่อย หากช่องใดเล่นไม่ได้ ให้แจ้งผ่าน issue
 
