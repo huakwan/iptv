@@ -183,7 +183,7 @@ img {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: min(calc(var(--title-offset) + 100px), calc(100% - 60px));
+  bottom: min(calc(var(--title-offset) + 120px), calc(100% - 60px));
   z-index: 1;
   display: flex;
   flex-direction: column;
@@ -512,18 +512,19 @@ img {
 
 .epg-item.is-now .epg-item-time,
 .epg-item.is-now .epg-item-body strong {
-  color: var(--accent);
+  color: var(--accent-2);
 }
 
 .epg-item-badge {
-  position: absolute;
-  top: 10px;
-  right: 0;
+  flex: 0 0 auto;
+  align-self: flex-start;
+  margin-top: 2px;
   padding: 1px 8px;
   font-size: 0.68rem;
   color: #fff;
-  background: var(--accent);
+  background: var(--accent-2);
   border-radius: 999px;
+  white-space: nowrap;
 }
 
 /* Fallback */
@@ -602,9 +603,7 @@ img {
     --btn: min(
       120px,
       34vh,
-      calc(
-        (100vw - 32px - var(--safe-left) - var(--safe-right) - 6 * var(--control-gap)) / 7.3
-      )
+      calc((100vw - 32px - var(--safe-left) - var(--safe-right) - 6 * var(--control-gap)) / 7.3)
     );
     --btn-main: calc(var(--btn) * 1.3);
   }
