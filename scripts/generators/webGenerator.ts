@@ -6,6 +6,8 @@ import { Generator } from './generator'
 import path from 'node:path'
 import fs from 'node:fs'
 
+const CORS_BLOCKED_HOSTS = ['live-iptv.cool-channel.com']
+
 type WebGeneratorProps = {
   streams: Collection<Stream>
   logFile: File
@@ -110,7 +112,12 @@ export class WebGenerator implements Generator {
     const seen = new Set<string>()
 
     this.streams
-      .filter((stream: Stream) => stream.isSFW())
+      .filter(
+        (stream: Stream) =>
+          stream.isSFW() &&
+          !stream.url.startsWith('http://') &&
+          !CORS_BLOCKED_HOSTS.some(host => stream.url.includes(host))
+      )
       .forEach((stream: Stream) => {
         const tvgId = stream.getTvgId()
         if (!tvgId || seen.has(tvgId)) return
