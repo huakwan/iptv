@@ -36,8 +36,7 @@ https://huakwan.github.io/iptv/guide.xml
 
 มีหน้าเว็บดูทีวีในตัว ไว้ใช้กับแอพ APTV ที่มีเว็บบราวเซอร์อยู่ข้างใน จึงเปิดดูทีวีระหว่างรถเคลื่อนที่ได้
 
-- หน้าแรก: [https://huakwan.github.io/iptv/tv/](https://huakwan.github.io/iptv/tv/)
-- เข้า [https://huakwan.github.io/iptv/](https://huakwan.github.io/iptv/) จะเปลี่ยนเส้นทางไปหน้า `tv/` อัตโนมัติ
+- หน้าแรก: [https://huakwan.github.io/iptv/](https://huakwan.github.io/iptv/) (หรือ [https://huakwan.github.io/iptv/tv/](https://huakwan.github.io/iptv/tv/) ก็เปิดหน้าเดียวกัน)
 - แตะช่องเพื่อเล่นเต็มจอ มีปุ่มควบคุม (กลับ, เล่น/หยุด, ผังรายการ) และปุ่ม **คัดลอกลิงก์สตรีม** สำหรับเปิดต่อใน APTV/VLC
 
 ข้อจำกัด: ช่องที่สตรีมผ่าน HTTP หรือต้องใช้ `Referer`/`User-Agent` อาจเล่นไม่ได้บนเบราว์เซอร์ ให้เปิดผ่าน APTV หรือ VLC แทน

@@ -158,9 +158,12 @@ export class WebGenerator implements Generator {
       fs.cpSync(assetsDir, outDir, { recursive: true })
     }
 
-    const rootIndex = path.join(process.cwd(), 'web', 'index.html')
-    if (fs.existsSync(rootIndex)) {
-      fs.copyFileSync(rootIndex, path.join(process.cwd(), PUBLIC_DIR, 'index.html'))
+    const tvIndex = path.join(assetsDir, 'index.html')
+    if (fs.existsSync(tvIndex)) {
+      const html = fs
+        .readFileSync(tvIndex, 'utf8')
+        .replace('<head>', '<head>' + EOL + '    <base href="./tv/" />')
+      fs.writeFileSync(path.join(process.cwd(), PUBLIC_DIR, 'index.html'), html, 'utf8')
     }
 
     this.logFile.append(
