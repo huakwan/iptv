@@ -190,12 +190,20 @@
 
   var TIER_RE = /^(https:\/\/live-us1\.thaimomo\.com\/live-as\/[A-Za-z0-9]+)-\d+(\/playlist\.m3u8)$/
 
+  var FETCH_TIMEOUT = 5000
+
   function fetchText(url) {
-    return fetch(url, { mode: 'cors', cache: 'no-store' })
+    var controller = new AbortController()
+    var timer = setTimeout(function () {
+      controller.abort()
+    }, FETCH_TIMEOUT)
+    return fetch(url, { mode: 'cors', cache: 'no-store', signal: controller.signal })
       .then(function (response) {
+        clearTimeout(timer)
         return response.ok ? response.text() : null
       })
       .catch(function () {
+        clearTimeout(timer)
         return null
       })
   }
@@ -241,12 +249,12 @@
     networkRetries = 0
     hls = new window.Hls({
       lowLatencyMode: false,
-      startLevel: -1,
+      startLevel: 0,
       maxBufferLength: 30,
       maxMaxBufferLength: 60,
       backBufferLength: 90,
       testBandwidth: false,
-      abrEwmaDefaultEstimate: 1400000,
+      abrEwmaDefaultEstimate: 2000000,
       abrEwmaFastLive: 2,
       abrEwmaSlowLive: 9,
       abrBandWidthFactor: 0.9,
@@ -256,12 +264,12 @@
       progressive: true,
       startFragPrefetch: true,
       initialLiveManifestSize: 1,
-      liveSyncDurationCount: 3,
+      liveSyncDurationCount: 1,
       manifestLoadingMaxRetry: 2,
       manifestLoadingRetryDelay: 500,
-      manifestLoadingTimeOut: 20000,
+      manifestLoadingTimeOut: 10000,
       levelLoadingMaxRetry: 3,
-      levelLoadingTimeOut: 20000,
+      levelLoadingTimeOut: 10000,
       fragLoadingMaxRetry: 3,
       fragLoadingTimeOut: 30000
     })
@@ -273,18 +281,25 @@
     hls.on(window.Hls.Events.ERROR, function (event, data) {
       if (!data || !data.fatal) return
       switch (data.type) {
-        case window.Hls.ErrorTypes.NETWORK_ERROR:
-          if (networkRetries < 1) {
+        case window.Hls.ErrorTypes.NETWORK_ERROR: {
+          var isTimeout = !!data.details && data.details.indexOf('TimeOut') !== -1
+          if (networkRetries < 3) {
             networkRetries++
-            hls.startLoad()
+            var retryDelay = 500 * Math.pow(2, networkRetries - 1)
+            setTimeout(function () {
+              if (hls) hls.startLoad()
+            }, retryDelay)
           } else {
             hls.destroy()
             hls = null
             showFallback(
-              'เล่นช่องนี้ในเบราว์เซอร์ไม่ได้ เพราะสตรีมต้นทางไม่ให้สิทธิ์ CORS (พบบ่อยกับ Chrome/Edge) กด "คัดลอกลิงก์สตรีม" แล้วเปิดใน Safari, VLC หรือ APTV แทน'
+              isTimeout
+                ? 'ช่องสัญญาณไม่ตอบสนองชั่วคราว สตรีมตอบช้าเกินกำหนด กด "ลองใหม่" เพื่อเชื่อมต่ออีกครั้ง'
+                : 'เล่นช่องนี้ในเบราว์เซอร์ไม่ได้ เพราะสตรีมต้นทางไม่ให้สิทธิ์ CORS (พบบ่อยกับ Chrome/Edge) กด "คัดลอกลิงก์สตรีม" แล้วเปิดใน Safari, VLC หรือ APTV แทน'
             )
           }
           break
+        }
         case window.Hls.ErrorTypes.MEDIA_ERROR:
           hls.recoverMediaError()
           break
