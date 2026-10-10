@@ -18,6 +18,7 @@
     "name": "Channel 5",
     "number": 5,
     "group": "General",
+    "gain": 5,
     "url": "https://nodelive.thaitv5hd.com/hls/tv5hdlive-for-thaitv5hdcom/stream_1.m3u8"
   },
   {
@@ -46,6 +47,7 @@
     "name": "Nation TV",
     "number": 22,
     "group": "News",
+    "gain": -4,
     "url": "https://live-us1.thaimomo.com/live-as/chNation-3/playlist.m3u8"
   },
   {
@@ -156,7 +158,7 @@
     "tvgId": "RamaChannel.th@SD",
     "name": "Rama Channel",
     "group": "General",
-    "gain": 15,
+    "gain": 20,
     "url": "https://ramach.ddns.net/live/ramalive/index.m3u8"
   },
   {

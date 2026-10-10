@@ -266,7 +266,7 @@
   }
 
   function setChannelGain(value) {
-    channelGain = typeof value === 'number' && value > 0 ? value : 1
+    channelGain = typeof value === 'number' ? Math.pow(10, value / 20) : 1
     applyGain()
   }
 

@@ -331,7 +331,7 @@ export class WebGenerator implements Generator {
           referrer: stream.referrer || '',
           userAgent: stream.user_agent || '',
           labels: stream.getLabels(),
-          ...(channelGains.get(tvgId) !== undefined && channelGains.get(tvgId) !== 1
+          ...(channelGains.get(tvgId) !== undefined && channelGains.get(tvgId) !== 0
             ? { gain: channelGains.get(tvgId) }
             : {})
         })
