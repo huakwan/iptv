@@ -281,7 +281,7 @@
         height = level.height
       }
     }
-    if (!width || !height || height > 480) {
+    if (!width || !height || height >= 576) {
       debugRes.hidden = true
       return
     }
@@ -594,12 +594,12 @@
     }
     hls = new window.Hls({
       lowLatencyMode: false,
-      startLevel: 0,
+      startLevel: -1,
       maxBufferLength: 30,
       maxMaxBufferLength: 60,
       backBufferLength: 30,
       testBandwidth: false,
-      abrEwmaDefaultEstimate: 1200000,
+      abrEwmaDefaultEstimate: 2000000,
       abrEwmaFastLive: 2,
       abrEwmaSlowLive: 9,
       abrBandWidthFactor: 0.9,
@@ -1053,8 +1053,16 @@
       return
     }
 
+    var pinOrder = Array.from(pins)
+    function rank(item) {
+      var index = pinOrder.indexOf(item.tvgId)
+      return index === -1 ? Infinity : index
+    }
     var ordered = channels.slice().sort(function (a, b) {
-      return (pins.has(a.tvgId) ? 0 : 1) - (pins.has(b.tvgId) ? 0 : 1)
+      var ra = rank(a)
+      var rb = rank(b)
+      if (ra === rb) return 0
+      return ra - rb
     })
 
     grid.textContent = ''
