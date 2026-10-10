@@ -1,12 +1,36 @@
-import { File } from '@freearhey/storage-js'
 import { PUBLIC_DIR, EOL } from '../constants'
-import { Stream } from '../models'
-import { Collection } from '@freearhey/core'
 import { Generator } from './generator'
+import { Stream } from '../models'
+import { execSync } from 'node:child_process'
+import { File } from '@freearhey/storage-js'
+import { Collection } from '@freearhey/core'
 import path from 'node:path'
 import fs from 'node:fs'
 
 const CORS_BLOCKED_HOSTS = ['live-iptv.cool-channel.com']
+
+function getBuildVersion(): string {
+  let sha = ''
+  try {
+    sha = execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] })
+      .toString()
+      .trim()
+  } catch {
+    sha = ''
+  }
+
+  const timestamp = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Asia/Bangkok',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).format(new Date())
+
+  return sha ? `${timestamp} · ${sha}` : timestamp
+}
 
 type WebGeneratorProps = {
   streams: Collection<Stream>
@@ -158,11 +182,21 @@ export class WebGenerator implements Generator {
       fs.cpSync(assetsDir, outDir, { recursive: true })
     }
 
+    const version = getBuildVersion()
+    const injectVersion = (html: string) => html.replace(/__APP_VERSION__/g, version)
+
+    const tvIndexOut = path.join(outDir, 'index.html')
+    if (fs.existsSync(tvIndexOut)) {
+      fs.writeFileSync(tvIndexOut, injectVersion(fs.readFileSync(tvIndexOut, 'utf8')), 'utf8')
+    }
+
     const tvIndex = path.join(assetsDir, 'index.html')
     if (fs.existsSync(tvIndex)) {
-      const html = fs
-        .readFileSync(tvIndex, 'utf8')
-        .replace('<head>', '<head>' + EOL + '    <base href="./tv/" />')
+      const html = injectVersion(
+        fs
+          .readFileSync(tvIndex, 'utf8')
+          .replace('<head>', '<head>' + EOL + '    <base href="./tv/" />')
+      )
       fs.writeFileSync(path.join(process.cwd(), PUBLIC_DIR, 'index.html'), html, 'utf8')
     }
 

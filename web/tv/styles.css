@@ -149,6 +149,13 @@ img {
   white-space: nowrap;
 }
 
+.app-footer {
+  padding: 4px 16px calc(16px + var(--safe-bottom));
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: center;
+}
+
 /* Player overlay */
 
 .player {
