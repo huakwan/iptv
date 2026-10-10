@@ -81,7 +81,7 @@ img {
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 12px;
 }
 
@@ -646,5 +646,25 @@ img {
   .grid {
     grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
     gap: 16px;
+  }
+}
+
+/* Small screens: fewer, larger cards so the channel label stays legible */
+
+@media (max-width: 600px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .card-title {
+    display: -webkit-box;
+    overflow: hidden;
+    white-space: normal;
+    text-overflow: clip;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    font-size: 0.95rem;
+    line-height: 1.3;
   }
 }
