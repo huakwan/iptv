@@ -2,10 +2,7 @@
 <html lang="th">
   <head>
     <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0b0f14" />
     <meta name="description" content="ดูทีวีไทยฟรี เลือกช่องแล้วรับชมได้ทันทีบนมือถือและ iPad" />
     <title>ดูทีวีออนไลน์ - HK IPTV</title>
@@ -38,12 +35,7 @@
 
     <div id="player" class="player" hidden>
       <div id="stage" class="player-stage">
-        <video
-          id="video"
-          playsinline
-          webkit-playsinline
-          preload="auto"
-        ></video>
+        <video id="video" playsinline webkit-playsinline preload="auto"></video>
 
         <div id="loader" class="loader" hidden>
           <span class="loader-spinner" aria-hidden="true"></span>
@@ -54,30 +46,68 @@
         <div id="controls" class="controls" hidden>
           <div class="controls-top">
             <img id="barLogo" class="controls-logo" alt="" hidden />
-            <span id="barTitle" class="controls-title">ทีวีฟรี</span>
+            <span id="barTitle" class="controls-title">ดูทีวีออนไลน์</span>
           </div>
 
           <div class="controls-center">
             <div class="control">
-              <button id="backBtn" class="icon-btn icon-btn-lg" type="button" aria-label="Exit" title="Exit">
-                <svg class="icon-back" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true">
+              <button
+                id="backBtn"
+                class="icon-btn icon-btn-lg"
+                type="button"
+                aria-label="Exit"
+                title="Exit"
+              >
+                <svg
+                  class="icon-back"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 512 512"
+                  aria-hidden="true"
+                >
                   <path d="M0 0h512v512H0z" fill="none" />
-                  <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="48" d="M328 112L184 256l144 144" />
+                  <path
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="48"
+                    d="M328 112L184 256l144 144"
+                  />
                 </svg>
               </button>
               <span class="control-label">Exit</span>
             </div>
             <div class="control">
-              <button id="playBtn" class="icon-btn icon-btn-lg icon-btn-xl" type="button" aria-label="เล่น/หยุด" title="เล่น/หยุด">
+              <button
+                id="playBtn"
+                class="icon-btn icon-btn-lg icon-btn-xl"
+                type="button"
+                aria-label="เล่น/หยุด"
+                title="เล่น/หยุด"
+              >
                 <span id="playIcon" class="icon-play" aria-hidden="true"></span>
               </button>
               <span id="playLabel" class="control-label">Play</span>
             </div>
             <div class="control">
-              <button id="epgBtn" class="icon-btn icon-btn-lg" type="button" aria-label="ผังรายการ" title="ผังรายการ">
-                <svg class="icon-epg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true">
+              <button
+                id="epgBtn"
+                class="icon-btn icon-btn-lg"
+                type="button"
+                aria-label="ผังรายการ"
+                title="ผังรายการ"
+              >
+                <svg
+                  class="icon-epg"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 512 512"
+                  aria-hidden="true"
+                >
                   <path d="M0 0h512v512H0z" fill="none" />
-                  <path fill="currentColor" d="M64 144a48 48 0 1 0 0-96a48 48 0 1 0 0 96m128-80c-17.7 0-32 14.3-32 32s14.3 32 32 32h288c17.7 0 32-14.3 32-32s-14.3-32-32-32zm0 160c-17.7 0-32 14.3-32 32s14.3 32 32 32h288c17.7 0 32-14.3 32-32s-14.3-32-32-32zm0 160c-17.7 0-32 14.3-32 32s14.3 32 32 32h288c17.7 0 32-14.3 32-32s-14.3-32-32-32zM64 464a48 48 0 1 0 0-96a48 48 0 1 0 0 96m48-208a48 48 0 1 0-96 0a48 48 0 1 0 96 0" />
+                  <path
+                    fill="currentColor"
+                    d="M64 144a48 48 0 1 0 0-96a48 48 0 1 0 0 96m128-80c-17.7 0-32 14.3-32 32s14.3 32 32 32h288c17.7 0 32-14.3 32-32s-14.3-32-32-32zm0 160c-17.7 0-32 14.3-32 32s14.3 32 32 32h288c17.7 0 32-14.3 32-32s-14.3-32-32-32zm0 160c-17.7 0-32 14.3-32 32s14.3 32 32 32h288c17.7 0 32-14.3 32-32s-14.3-32-32-32zM64 464a48 48 0 1 0 0-96a48 48 0 1 0 0 96m48-208a48 48 0 1 0-96 0a48 48 0 1 0 96 0"
+                  />
                 </svg>
               </button>
               <span class="control-label">EPG</span>
@@ -105,7 +135,9 @@
           <p class="fallback-msg" id="errorMsg"></p>
           <div class="fallback-actions">
             <button class="btn" type="button" id="retryBtn">ลองใหม่</button>
-            <button class="btn btn-ghost" type="button" id="fallbackBack">กลับไปหน้ารายการช่อง</button>
+            <button class="btn btn-ghost" type="button" id="fallbackBack">
+              กลับไปหน้ารายการช่อง
+            </button>
           </div>
         </section>
       </div>
