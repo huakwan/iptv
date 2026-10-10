@@ -281,11 +281,15 @@
         height = level.height
       }
     }
-    if (!width || !height) {
+    if (!width || !height || height > 480) {
       debugRes.hidden = true
       return
     }
-    debugRes.textContent = width + ' × ' + height
+    debugRes.innerHTML =
+      '<svg class="debug-res__pulse" viewBox="0 0 64 24" preserveAspectRatio="none" aria-hidden="true">' +
+      '<polyline class="debug-res__pulse-base" pathLength="100" points="0,12 20,12 26,4 33,20 40,8 46,12 64,12"></polyline>' +
+      '<polyline class="debug-res__pulse-line" pathLength="100" points="0,12 20,12 26,4 33,20 40,8 46,12 64,12"></polyline>' +
+      '</svg>สัญญาณความละเอียดต่ำ'
     debugRes.hidden = false
   }
 
