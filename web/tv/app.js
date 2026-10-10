@@ -22,7 +22,8 @@
   var epgList = document.getElementById('epgList')
   var fallback = document.getElementById('fallback')
   var errorMsg = document.getElementById('errorMsg')
-  var copyBtn = document.getElementById('copyBtn')
+  var fallbackLogo = document.getElementById('fallbackLogo')
+  var fallbackName = document.getElementById('fallbackName')
   var retryBtn = document.getElementById('retryBtn')
   var fallbackBack = document.getElementById('fallbackBack')
 
@@ -35,6 +36,16 @@
   var networkRetries = 0
   var pushed = false
   var loading = false
+
+  var FALLBACK_MSG = {
+    timeout: 'ช่องสัญญาณไม่ตอบสนองชั่วคราว สตรีมตอบช้าเกินกำหนด กด "ลองใหม่" เพื่อเชื่อมต่ออีกครั้ง',
+    cors: 'เล่นช่องนี้ในเบราว์เซอร์ไม่ได้ เพราะสตรีมต้นทางไม่ให้สิทธิ์',
+    media: 'เล่นช่องนี้ในเบราว์เซอร์ไม่ได้ (สตรีมติด CORS หรือลิงก์หมดอายุ)',
+    http: 'ช่องนี้ใช้สตรีม HTTP จึงเล่นบนหน้า HTTPS ไม่ได้ ลองเปิดในเบราว์เซอร์อื่นแทน',
+    unsupported: 'เบราว์เซอร์นี้ไม่รองรับการเล่น HLS',
+    script: 'โหลดตัวเล่นไม่สำเร็จ ลองรีเฟรชอีกครั้ง',
+    stream: 'เล่นช่องนี้ในเบราว์เซอร์ไม่ได้ สตรีมอาจติด CORS'
+  }
 
   function param(name) {
     return new URLSearchParams(window.location.search).get(name)
@@ -113,11 +124,12 @@
   function restartControlsTimer() {
     clearTimeout(controlsTimer)
     controlsTimer = null
-    if (loading || video.paused) return
+    if (loading || video.paused || !fallback.hidden) return
     controlsTimer = setTimeout(hideControls, 4000)
   }
 
   function showControls() {
+    if (!fallback.hidden) return
     controls.hidden = false
     if (loader) loader.classList.remove('is-center')
     restartControlsTimer()
@@ -158,6 +170,21 @@
   function showFallback(message) {
     loading = false
     hideLoader()
+    hideControls()
+    if (channel && channel.name) {
+      fallbackName.textContent = channel.name
+      if (channel.logo) {
+        fallbackLogo.src = channel.logo
+        fallbackLogo.hidden = false
+      } else {
+        fallbackLogo.hidden = true
+        fallbackLogo.removeAttribute('src')
+      }
+    } else {
+      fallbackName.textContent = ''
+      fallbackLogo.hidden = true
+      fallbackLogo.removeAttribute('src')
+    }
     errorMsg.textContent = message
     fallback.hidden = false
   }
@@ -292,11 +319,7 @@
           } else {
             hls.destroy()
             hls = null
-            showFallback(
-              isTimeout
-                ? 'ช่องสัญญาณไม่ตอบสนองชั่วคราว สตรีมตอบช้าเกินกำหนด กด "ลองใหม่" เพื่อเชื่อมต่ออีกครั้ง'
-                : 'เล่นช่องนี้ในเบราว์เซอร์ไม่ได้ เพราะสตรีมต้นทางไม่ให้สิทธิ์ CORS (พบบ่อยกับ Chrome/Edge) กด "คัดลอกลิงก์สตรีม" แล้วเปิดใน Safari, VLC หรือ APTV แทน'
-            )
+            showFallback(isTimeout ? FALLBACK_MSG.timeout : FALLBACK_MSG.cors)
           }
           break
         }
@@ -306,9 +329,7 @@
         default:
           hls.destroy()
           hls = null
-          showFallback(
-            'เล่นช่องนี้ในเบราว์เซอร์ไม่ได้ (สตรีมติด CORS หรือลิงก์หมดอายุ) กด "คัดลอกลิงก์สตรีม" แล้วเปิดใน Safari, VLC หรือ APTV แทน'
-          )
+          showFallback(FALLBACK_MSG.media)
       }
     })
   }
@@ -344,9 +365,7 @@
 
   function startPlayback(url) {
     if (window.location.protocol === 'https:' && url.indexOf('http://') === 0) {
-      showFallback(
-        'ช่องนี้ใช้สตรีม HTTP จึงเล่นบนหน้า HTTPS ไม่ได้ กด "คัดลอกลิงก์สตรีม" แล้วเปิดใน VLC หรือ APTV แทน'
-      )
+      showFallback(FALLBACK_MSG.http)
       return
     }
 
@@ -391,14 +410,14 @@
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
           playNative()
         } else {
-          showFallback('เบราว์เซอร์นี้ไม่รองรับการเล่น HLS')
+          showFallback(FALLBACK_MSG.unsupported)
         }
       })
       .catch(function () {
         if (video.canPlayType('application/vnd.apple.mpegurl')) {
           playNative()
         } else {
-          showFallback('โหลดตัวเล่นไม่สำเร็จ ลองรีเฟรชอีกครั้ง')
+          showFallback(FALLBACK_MSG.script)
         }
       })
   }
@@ -681,6 +700,10 @@
     barLogo.hidden = true
   })
 
+  fallbackLogo.addEventListener('error', function () {
+    fallbackLogo.hidden = true
+  })
+
   unmuteBtn.addEventListener('click', function (event) {
     event.stopPropagation()
     unmuteBtn.hidden = true
@@ -713,24 +736,7 @@
   video.addEventListener('error', function () {
     hideLoader()
     if (!video.getAttribute('src')) return
-    showFallback(
-      'เล่นช่องนี้ในเบราว์เซอร์ไม่ได้ สตรีมอาจติด CORS หรือลิงก์หมดอายุ กด "คัดลอกลิงก์สตรีม" แล้วเปิดใน Safari, VLC หรือ APTV แทน'
-    )
-  })
-
-  copyBtn.addEventListener('click', function () {
-    if (!channel) return
-    var done = function () {
-      copyBtn.textContent = 'คัดลอกแล้ว'
-      setTimeout(function () {
-        copyBtn.textContent = 'คัดลอกลิงก์สตรีม'
-      }, 2000)
-    }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(channel.url).then(done, done)
-    } else {
-      done()
-    }
+    showFallback(FALLBACK_MSG.stream)
   })
 
   retryBtn.addEventListener('click', function (event) {

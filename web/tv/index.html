@@ -98,15 +98,15 @@
         </div>
 
         <section id="fallback" class="fallback fallback-overlay" hidden>
+          <div class="fallback-head">
+            <img id="fallbackLogo" class="fallback-logo" alt="" hidden />
+            <span id="fallbackName" class="fallback-name"></span>
+          </div>
           <p class="fallback-msg" id="errorMsg"></p>
           <div class="fallback-actions">
             <button class="btn" type="button" id="retryBtn">ลองใหม่</button>
-            <button class="btn btn-ghost" type="button" id="copyBtn">คัดลอกลิงก์สตรีม</button>
+            <button class="btn btn-ghost" type="button" id="fallbackBack">กลับไปหน้ารายการช่อง</button>
           </div>
-          <p class="muted small">
-            นำลิงก์ไปเปิดใน APTV, VLC หรือ Safari ซึ่งรองรับสตรีมที่ไม่มี CORS และการตั้งค่า Referer/User-Agent
-          </p>
-          <button class="link-btn" type="button" id="fallbackBack">กลับไปหน้ารายการช่อง</button>
         </section>
       </div>
     </div>
