@@ -4,7 +4,7 @@
     "name": "NBT 2 HD",
     "number": 2,
     "group": "General",
-    "url": "https://cdn-edge.iiptvcdn.com/live_event/smil:f180-054a-38d7-ce66-f7cf.smil/playlist.m3u8"
+    "url": "https://cdn-edge.iiptvcdn.com/live_event/smil:f180-054a-38d7-ce66-f7cf.smil/playlist.m3u8?DVR"
   },
   {
     "tvgId": "ThaiPBS.th@SD",
@@ -39,7 +39,7 @@
     "name": "NBT 11 Central",
     "number": 11,
     "group": "General",
-    "url": "https://cdn-edge.iiptvcdn.com/live_event/smil:6ee0-5126-0cee-7ba2-18b7.smil/playlist.m3u8"
+    "url": "https://cdn-edge.iiptvcdn.com/live_event/smil:6ee0-5126-0cee-7ba2-18b7.smil/playlist.m3u8?DVR"
   },
   {
     "tvgId": "NationTV.th@SD",
