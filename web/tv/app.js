@@ -22,6 +22,7 @@
   var muteBtn = document.getElementById('muteBtn')
   var muteLabel = document.getElementById('muteLabel')
   var muteBadge = document.getElementById('muteBadge')
+  var debugRes = document.getElementById('debugRes')
   var epgPopup = document.getElementById('epgPopup')
   var epgClose = document.getElementById('epgClose')
   var epgList = document.getElementById('epgList')
@@ -46,6 +47,15 @@
   var pushed = false
   var loading = false
   var muted = false
+  var watchdogTimer = null
+
+  var WATCHDOG_MS = 20000
+
+  var audioCtx = null
+  var mediaSourceNode = null
+  var gainNode = null
+  var limiterNode = null
+  var channelGain = 1
 
   var PINS_KEY = 'hk-iptv-pins'
   var LONG_PRESS_MS = 550
@@ -216,6 +226,67 @@
     }
     if (muteLabel) muteLabel.textContent = muted ? 'Unmute' : 'Mute'
     if (muteBadge) muteBadge.hidden = !muted
+    applyGain()
+  }
+
+  function ensureAudioGraph() {
+    if (mediaSourceNode) return
+    var Ctx = window.AudioContext || window.webkitAudioContext
+    if (!Ctx) return
+    try {
+      audioCtx = new Ctx()
+      mediaSourceNode = audioCtx.createMediaElementSource(video)
+      gainNode = audioCtx.createGain()
+      limiterNode = audioCtx.createDynamicsCompressor()
+      limiterNode.threshold.value = -1
+      limiterNode.knee.value = 0
+      limiterNode.ratio.value = 20
+      limiterNode.attack.value = 0.003
+      limiterNode.release.value = 0.25
+      mediaSourceNode.connect(gainNode)
+      gainNode.connect(limiterNode)
+      limiterNode.connect(audioCtx.destination)
+    } catch {
+      audioCtx = null
+      mediaSourceNode = null
+      gainNode = null
+      limiterNode = null
+    }
+  }
+
+  function applyGain() {
+    if (!gainNode) return
+    gainNode.gain.value = muted ? 0 : channelGain
+  }
+
+  function resumeAudio() {
+    if (audioCtx && audioCtx.state === 'suspended' && audioCtx.resume) {
+      audioCtx.resume().catch(function () {})
+    }
+  }
+
+  function setChannelGain(value) {
+    channelGain = typeof value === 'number' && value > 0 ? value : 1
+    applyGain()
+  }
+
+  function updateResolution() {
+    if (!debugRes) return
+    var width = video.videoWidth
+    var height = video.videoHeight
+    if (hls && hls.currentLevel >= 0 && hls.levels && hls.levels[hls.currentLevel]) {
+      var level = hls.levels[hls.currentLevel]
+      if (level.width && level.height) {
+        width = level.width
+        height = level.height
+      }
+    }
+    if (!width || !height) {
+      debugRes.hidden = true
+      return
+    }
+    debugRes.textContent = width + ' × ' + height
+    debugRes.hidden = false
   }
 
   function hideControls() {
@@ -258,6 +329,26 @@
     if (loader) loader.hidden = true
   }
 
+  function clearWatchdog() {
+    clearTimeout(watchdogTimer)
+    watchdogTimer = null
+  }
+
+  function armWatchdog() {
+    clearWatchdog()
+    watchdogTimer = setTimeout(function () {
+      watchdogTimer = null
+      if (!channel || !fallback.hidden) return
+      if (unmuteBtn && !unmuteBtn.hidden) return
+      if (!video.paused && video.readyState >= 3) return
+      if (hls) {
+        hls.destroy()
+        hls = null
+      }
+      showFallback(FALLBACK_MSG.timeout)
+    }, WATCHDOG_MS)
+  }
+
   function warmUpHost(url) {
     try {
       var origin = new URL(url, window.location.href).origin
@@ -274,6 +365,7 @@
 
   function showFallback(message) {
     loading = false
+    clearWatchdog()
     hideLoader()
     hideControls()
     if (channel && channel.name) {
@@ -295,6 +387,7 @@
   }
 
   function tryPlay() {
+    resumeAudio()
     video.muted = muted
     var attempt = video.play()
     if (attempt && attempt.catch) {
@@ -322,13 +415,27 @@
 
   var TIER_RE = /^(https:\/\/live-us1\.thaimomo\.com\/live-as\/[A-Za-z0-9]+)-\d+(\/playlist\.m3u8)$/
 
-  var FETCH_TIMEOUT = 5000
+  var MASTER_CACHE_BASE = 'hk-iptv-master:'
+  var MASTER_CACHE_PREFIX = MASTER_CACHE_BASE + 'v2:'
+  var MASTER_TTL = 6 * 60 * 60 * 1000
+
+  var masterSourceUrl = null
+  var masterFromCache = false
+  var cacheRecovered = false
+  var pendingCacheUrl = null
+  var pendingCacheMaster = null
+
+  function tierFetchTimeout() {
+    var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection
+    var slow = conn && (conn.saveData || /^(slow-2g|2g|3g)$/.test(conn.effectiveType || ''))
+    return slow ? 2500 : 3500
+  }
 
   function fetchText(url) {
     var controller = new AbortController()
     var timer = setTimeout(function () {
       controller.abort()
-    }, FETCH_TIMEOUT)
+    }, tierFetchTimeout())
     return fetch(url, { mode: 'cors', cache: 'no-store', signal: controller.signal })
       .then(function (response) {
         clearTimeout(timer)
@@ -338,6 +445,103 @@
         clearTimeout(timer)
         return null
       })
+  }
+
+  function readCachedMaster(url) {
+    try {
+      var raw = window.localStorage.getItem(MASTER_CACHE_PREFIX + url)
+      if (!raw) return null
+      var entry = JSON.parse(raw)
+      if (!entry || typeof entry.master !== 'string' || !entry.ts) return null
+      if (Date.now() - entry.ts > MASTER_TTL) {
+        window.localStorage.removeItem(MASTER_CACHE_PREFIX + url)
+        return null
+      }
+      return entry.master
+    } catch {
+      return null
+    }
+  }
+
+  function writeCachedMaster(url, master) {
+    if (!master) return
+    try {
+      window.localStorage.setItem(
+        MASTER_CACHE_PREFIX + url,
+        JSON.stringify({ master: master, ts: Date.now() })
+      )
+    } catch {
+      /* storage full or unavailable: run without cache */
+    }
+  }
+
+  function clearCachedMaster(url) {
+    try {
+      window.localStorage.removeItem(MASTER_CACHE_PREFIX + url)
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function purgeStaleMasterCache() {
+    try {
+      var stale = []
+      for (var i = 0; i < window.localStorage.length; i++) {
+        var key = window.localStorage.key(i)
+        if (key && key.indexOf(MASTER_CACHE_BASE) === 0 && key.indexOf(MASTER_CACHE_PREFIX) !== 0) {
+          stale.push(key)
+        }
+      }
+      stale.forEach(function (key) {
+        window.localStorage.removeItem(key)
+      })
+    } catch {
+      /* storage unavailable */
+    }
+  }
+
+  function scheduleMasterCache(url, master) {
+    pendingCacheUrl = url
+    pendingCacheMaster = master
+  }
+
+  function commitMasterCache() {
+    if (pendingCacheMaster && pendingCacheUrl) {
+      writeCachedMaster(pendingCacheUrl, pendingCacheMaster)
+    }
+    pendingCacheUrl = null
+    pendingCacheMaster = null
+  }
+
+  function refreshMasterCache(url) {
+    if (!TIER_RE.test(url)) return
+    buildTierMaster(url).then(function (master) {
+      if (!master) return
+      if (readCachedMaster(url) !== master) writeCachedMaster(url, master)
+    })
+  }
+
+  function cacheMasterBlob(master) {
+    if (tierBlobUrl) {
+      URL.revokeObjectURL(tierBlobUrl)
+      tierBlobUrl = null
+    }
+    tierBlobUrl = URL.createObjectURL(
+      new Blob([master], { type: 'application/vnd.apple.mpegurl' })
+    )
+    return tierBlobUrl
+  }
+
+  function recoverMaster(url) {
+    buildTierMaster(url).then(function (master) {
+      if (!channel) return
+      if (!master) {
+        showFallback(FALLBACK_MSG.cors)
+        return
+      }
+      scheduleMasterCache(url, master)
+      attachHls(cacheMasterBlob(master))
+    })
   }
 
   function buildTierMaster(url) {
@@ -379,14 +583,19 @@
 
   function attachHls(url) {
     networkRetries = 0
+    if (channelGain !== 1) {
+      ensureAudioGraph()
+      resumeAudio()
+      applyGain()
+    }
     hls = new window.Hls({
       lowLatencyMode: false,
       startLevel: 0,
       maxBufferLength: 30,
       maxMaxBufferLength: 60,
-      backBufferLength: 90,
+      backBufferLength: 30,
       testBandwidth: false,
-      abrEwmaDefaultEstimate: 2000000,
+      abrEwmaDefaultEstimate: 1200000,
       abrEwmaFastLive: 2,
       abrEwmaSlowLive: 9,
       abrBandWidthFactor: 0.9,
@@ -396,7 +605,7 @@
       progressive: true,
       startFragPrefetch: true,
       initialLiveManifestSize: 1,
-      liveSyncDurationCount: 1,
+      liveSyncDurationCount: 2,
       manifestLoadingMaxRetry: 2,
       manifestLoadingRetryDelay: 500,
       manifestLoadingTimeOut: 10000,
@@ -408,6 +617,12 @@
     hls.attachMedia(video)
     hls.on(window.Hls.Events.MANIFEST_PARSED, function () {
       if (video.paused) tryPlay()
+    })
+    hls.on(window.Hls.Events.LEVEL_SWITCHED, function () {
+      updateResolution()
+    })
+    hls.on(window.Hls.Events.LEVEL_LOADED, function () {
+      updateResolution()
     })
     hls.loadSource(url)
     hls.on(window.Hls.Events.ERROR, function (event, data) {
@@ -424,7 +639,14 @@
           } else {
             hls.destroy()
             hls = null
-            showFallback(isTimeout ? FALLBACK_MSG.timeout : FALLBACK_MSG.cors)
+            if (masterSourceUrl) clearCachedMaster(masterSourceUrl)
+            if (masterFromCache && !cacheRecovered && masterSourceUrl) {
+              cacheRecovered = true
+              masterFromCache = false
+              recoverMaster(masterSourceUrl)
+            } else {
+              showFallback(isTimeout ? FALLBACK_MSG.timeout : FALLBACK_MSG.cors)
+            }
           }
           break
         }
@@ -441,7 +663,11 @@
 
   function resetPlayback() {
     loading = false
+    clearWatchdog()
     hideLoader()
+    if (debugRes) debugRes.hidden = true
+    pendingCacheUrl = null
+    pendingCacheMaster = null
     if (tierBlobUrl) {
       URL.revokeObjectURL(tierBlobUrl)
       tierBlobUrl = null
@@ -477,7 +703,14 @@
     showLoader()
     warmUpHost(url)
     loading = true
+    armWatchdog()
     showControls()
+
+    masterSourceUrl = url
+    masterFromCache = false
+    cacheRecovered = false
+    pendingCacheUrl = null
+    pendingCacheMaster = null
 
     var playNative = function () {
       video.src = url
@@ -485,13 +718,18 @@
     }
 
     var playWithHls = function () {
+      var cached = readCachedMaster(url)
+      if (cached) {
+        masterFromCache = true
+        attachHls(cacheMasterBlob(cached))
+        refreshMasterCache(url)
+        return
+      }
       buildTierMaster(url).then(function (master) {
         if (!channel) return
         if (master) {
-          tierBlobUrl = URL.createObjectURL(
-            new Blob([master], { type: 'application/vnd.apple.mpegurl' })
-          )
-          attachHls(tierBlobUrl)
+          scheduleMasterCache(url, master)
+          attachHls(cacheMasterBlob(master))
         } else {
           attachHls(url)
         }
@@ -628,6 +866,7 @@
     showLoader()
     syncPlayIcon()
     syncPinState()
+    setChannelGain(channel.gain)
     muted = false
     syncMuteState()
 
@@ -858,9 +1097,11 @@
     event.stopPropagation()
     if (video.paused) {
       video.play()
+      armWatchdog()
     } else {
       video.pause()
       loading = false
+      clearWatchdog()
       hideLoader()
       showControls()
     }
@@ -899,11 +1140,15 @@
 
   video.addEventListener('play', syncPlayIcon)
   video.addEventListener('pause', syncPlayIcon)
+  video.addEventListener('loadedmetadata', updateResolution)
+  video.addEventListener('resize', updateResolution)
   video.addEventListener('playing', function () {
     var wasLoading = loading
     loading = false
+    clearWatchdog()
     hideLoader()
     syncPlayIcon()
+    commitMasterCache()
     if (wasLoading) {
       hideControls()
     } else {
@@ -915,10 +1160,16 @@
     if (!video.paused && video.readyState >= 3) hideLoader()
   })
   video.addEventListener('waiting', function () {
-    if (channel && fallback.hidden && !video.paused && video.readyState < 3) showLoader()
+    if (channel && fallback.hidden && !video.paused && video.readyState < 3) {
+      showLoader()
+      armWatchdog()
+    }
   })
   video.addEventListener('stalled', function () {
-    if (channel && fallback.hidden && !video.paused && video.readyState < 3) showLoader()
+    if (channel && fallback.hidden && !video.paused && video.readyState < 3) {
+      showLoader()
+      armWatchdog()
+    }
   })
   video.addEventListener('error', function () {
     hideLoader()
@@ -961,6 +1212,7 @@
 
   document.addEventListener('fullscreenchange', onFullscreenChange)
   document.addEventListener('webkitfullscreenchange', onFullscreenChange)
+  document.addEventListener('pointerdown', resumeAudio)
 
   window.addEventListener('popstate', function () {
     pushed = false
@@ -973,6 +1225,8 @@
   })
 
   /* ---------- Init ---------- */
+
+  purgeStaleMasterCache()
 
   loadEpg()
 
