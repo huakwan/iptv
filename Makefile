@@ -37,7 +37,8 @@ check-url:
 serve:
 	@mkdir -p $(SERVE_DIR)/tv
 	cp -R web/tv/. $(SERVE_DIR)/tv/
-	@echo "Serving http://localhost:$(PORT)/tv/ (Ctrl+C to stop)"
+	@perl -0pe 's#<head>#<head>\n    <base href="./tv/" />#; s/__APP_VERSION__/dev/g' web/tv/index.html > $(SERVE_DIR)/index.html
+	@echo "Serving http://localhost:$(PORT)/ (Ctrl+C to stop)"
 	python3 -m http.server $(PORT) --directory $(SERVE_DIR)
 
 stop:
