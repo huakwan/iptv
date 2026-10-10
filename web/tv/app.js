@@ -26,6 +26,10 @@
   var fallbackName = document.getElementById('fallbackName')
   var retryBtn = document.getElementById('retryBtn')
   var fallbackBack = document.getElementById('fallbackBack')
+  var pinConfirm = document.getElementById('pinConfirm')
+  var pinConfirmMsg = document.getElementById('pinConfirmMsg')
+  var pinConfirmOk = document.getElementById('pinConfirmOk')
+  var pinConfirmCancel = document.getElementById('pinConfirmCancel')
 
   var channels = []
   var epg = {}
@@ -36,6 +40,15 @@
   var networkRetries = 0
   var pushed = false
   var loading = false
+
+  var PINS_KEY = 'hk-iptv-pins'
+  var LONG_PRESS_MS = 550
+  var MOVE_TOLERANCE = 10
+  var pins = loadPins()
+  var pendingPin = null
+  var lastLongPress = 0
+  var STAR_SVG =
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>'
 
   var FALLBACK_MSG = {
     timeout: 'ช่องสัญญาณไม่ตอบสนองชั่วคราว สตรีมตอบช้าเกินกำหนด กด "ลองใหม่" เพื่อเชื่อมต่ออีกครั้ง',
@@ -76,6 +89,70 @@
       hour: '2-digit',
       minute: '2-digit'
     })
+  }
+
+  /* ---------- Pinned channels ---------- */
+
+  function loadPins() {
+    var set = new Set()
+    try {
+      var raw = window.localStorage.getItem(PINS_KEY)
+      if (!raw) return set
+      var list = JSON.parse(raw)
+      if (Array.isArray(list)) {
+        list.forEach(function (id) {
+          if (id) set.add(id)
+        })
+      }
+    } catch {
+      /* storage unavailable or corrupt: start empty */
+    }
+    return set
+  }
+
+  function savePins() {
+    try {
+      window.localStorage.setItem(PINS_KEY, JSON.stringify(Array.from(pins)))
+    } catch {
+      /* storage unavailable: pins stay in memory for this session */
+    }
+  }
+
+  function togglePin(tvgId) {
+    if (pins.has(tvgId)) {
+      pins.delete(tvgId)
+    } else {
+      pins.add(tvgId)
+    }
+    savePins()
+    renderGrid()
+  }
+
+  function openPinConfirm(item) {
+    if (!pinConfirm) return
+    pendingPin = item
+    var name = displayName(item)
+    pinConfirmMsg.textContent = pins.has(item.tvgId)
+      ? 'เลิกปักหมุด "' + name + '" ใช่ไหม?'
+      : 'ปักหมุด "' + name + '" ไว้ด้านบนใช่ไหม?'
+    pinConfirm.hidden = false
+  }
+
+  function closePinConfirm() {
+    if (!pinConfirm) return
+    pinConfirm.hidden = true
+    pendingPin = null
+  }
+
+  function confirmPin() {
+    var item = pendingPin
+    closePinConfirm()
+    if (!item) return
+    togglePin(item.tvgId)
+  }
+
+  function recentLongPress() {
+    return lastLongPress > 0 && Date.now() - lastLongPress < 700
   }
 
   /* ---------- Fullscreen helpers ---------- */
@@ -600,7 +677,59 @@
     link.appendChild(thumb)
     link.appendChild(title)
 
+    if (pins.has(item.tvgId)) {
+      link.classList.add('is-pinned')
+      var badge = document.createElement('span')
+      badge.className = 'pin-badge'
+      badge.setAttribute('aria-hidden', 'true')
+      badge.innerHTML = STAR_SVG
+      link.appendChild(badge)
+    }
+
+    var pressTimer = null
+    var startX = 0
+    var startY = 0
+
+    function cancelPress() {
+      clearTimeout(pressTimer)
+      pressTimer = null
+    }
+
+    link.addEventListener('pointerdown', function (event) {
+      if (event.button && event.button !== 0) return
+      startX = event.clientX
+      startY = event.clientY
+      cancelPress()
+      pressTimer = setTimeout(function () {
+        pressTimer = null
+        lastLongPress = Date.now()
+        if (navigator.vibrate) navigator.vibrate(10)
+        openPinConfirm(item)
+      }, LONG_PRESS_MS)
+    })
+
+    link.addEventListener('pointermove', function (event) {
+      if (!pressTimer) return
+      if (
+        Math.abs(event.clientX - startX) > MOVE_TOLERANCE ||
+        Math.abs(event.clientY - startY) > MOVE_TOLERANCE
+      ) {
+        cancelPress()
+      }
+    })
+
+    link.addEventListener('pointerup', cancelPress)
+    link.addEventListener('pointercancel', cancelPress)
+    link.addEventListener('pointerleave', cancelPress)
+    link.addEventListener('contextmenu', function (event) {
+      event.preventDefault()
+    })
+
     link.addEventListener('click', function (event) {
+      if (recentLongPress()) {
+        event.preventDefault()
+        return
+      }
       if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
       if (event.button && event.button !== 0) return
 
@@ -647,8 +776,13 @@
       return
     }
 
+    var ordered = channels.slice().sort(function (a, b) {
+      return (pins.has(a.tvgId) ? 0 : 1) - (pins.has(b.tvgId) ? 0 : 1)
+    })
+
+    grid.textContent = ''
     var fragment = document.createDocumentFragment()
-    channels.forEach(function (item) {
+    ordered.forEach(function (item) {
       fragment.appendChild(createCard(item))
     })
     grid.appendChild(fragment)
@@ -752,6 +886,25 @@
     event.stopPropagation()
     goBack()
   })
+
+  if (pinConfirm) {
+    pinConfirmOk.addEventListener('click', function () {
+      if (recentLongPress()) return
+      confirmPin()
+    })
+    pinConfirmCancel.addEventListener('click', function () {
+      if (recentLongPress()) return
+      closePinConfirm()
+    })
+    pinConfirm.addEventListener('click', function (event) {
+      if (event.target !== pinConfirm) return
+      if (recentLongPress()) return
+      closePinConfirm()
+    })
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && !pinConfirm.hidden) closePinConfirm()
+    })
+  }
 
   function onFullscreenChange() {
     if (!fsElement() && channel) goBack()
