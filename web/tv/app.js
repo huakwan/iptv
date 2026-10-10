@@ -17,6 +17,11 @@
   var playBtn = document.getElementById('playBtn')
   var playIcon = document.getElementById('playIcon')
   var playLabel = document.getElementById('playLabel')
+  var pinBtn = document.getElementById('pinBtn')
+  var pinLabel = document.getElementById('pinLabel')
+  var muteBtn = document.getElementById('muteBtn')
+  var muteLabel = document.getElementById('muteLabel')
+  var muteBadge = document.getElementById('muteBadge')
   var epgPopup = document.getElementById('epgPopup')
   var epgClose = document.getElementById('epgClose')
   var epgList = document.getElementById('epgList')
@@ -40,6 +45,7 @@
   var networkRetries = 0
   var pushed = false
   var loading = false
+  var muted = false
 
   var PINS_KEY = 'hk-iptv-pins'
   var LONG_PRESS_MS = 550
@@ -190,6 +196,28 @@
     playLabel.textContent = video.paused ? 'Play' : 'Pause'
   }
 
+  function syncPinState() {
+    if (!pinBtn || !channel) return
+    var on = pins.has(channel.tvgId)
+    pinBtn.classList.toggle('is-pinned', on)
+    pinBtn.setAttribute('aria-pressed', on ? 'true' : 'false')
+    pinBtn.setAttribute('aria-label', on ? 'เลิกปักหมุด' : 'ปักหมุดช่อง')
+    pinBtn.title = on ? 'เลิกปักหมุด' : 'ปักหมุดช่อง'
+    if (pinLabel) pinLabel.textContent = on ? 'Unpin' : 'Pin'
+  }
+
+  function syncMuteState() {
+    video.muted = muted
+    if (muteBtn) {
+      muteBtn.classList.toggle('is-muted', muted)
+      muteBtn.setAttribute('aria-pressed', muted ? 'true' : 'false')
+      muteBtn.setAttribute('aria-label', muted ? 'เปิดเสียง' : 'ปิดเสียง')
+      muteBtn.title = muted ? 'เปิดเสียง' : 'ปิดเสียง'
+    }
+    if (muteLabel) muteLabel.textContent = muted ? 'Unmute' : 'Mute'
+    if (muteBadge) muteBadge.hidden = !muted
+  }
+
   function hideControls() {
     if (!epgPopup.hidden) return
     controls.hidden = true
@@ -267,7 +295,7 @@
   }
 
   function tryPlay() {
-    video.muted = false
+    video.muted = muted
     var attempt = video.play()
     if (attempt && attempt.catch) {
       attempt.catch(function (err) {
@@ -599,6 +627,9 @@
     showControls()
     showLoader()
     syncPlayIcon()
+    syncPinState()
+    muted = false
+    syncMuteState()
 
     if (withFullscreen) requestFullscreen(stage)
 
@@ -620,6 +651,9 @@
     fallback.hidden = true
     player.hidden = true
     document.title = 'ดูทีวีออนไลน์ - HK IPTV'
+
+    muted = false
+    syncMuteState()
 
     if (fsElement()) exitFullscreen()
   }
@@ -831,6 +865,21 @@
       showControls()
     }
     syncPlayIcon()
+    restartControlsTimer()
+  })
+
+  pinBtn.addEventListener('click', function (event) {
+    event.stopPropagation()
+    if (!channel) return
+    togglePin(channel.tvgId)
+    syncPinState()
+    restartControlsTimer()
+  })
+
+  muteBtn.addEventListener('click', function (event) {
+    event.stopPropagation()
+    muted = !muted
+    syncMuteState()
     restartControlsTimer()
   })
 

@@ -441,6 +441,67 @@ img {
   color: #fff;
 }
 
+.icon-pin {
+  display: block;
+  width: 1em;
+  height: 1em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.icon-btn.is-pinned .icon-pin {
+  fill: #fff;
+  stroke: #fff;
+}
+
+.icon-volume {
+  display: block;
+  width: 1em;
+  height: 1em;
+}
+
+.icon-volume-off {
+  display: none;
+}
+
+.icon-btn.is-muted .icon-volume-on {
+  display: none;
+}
+
+.icon-btn.is-muted .icon-volume-off {
+  display: block;
+}
+
+/* Muted indicator */
+
+.mute-badge {
+  position: absolute;
+  top: calc(12px + var(--safe-top));
+  left: calc(12px + var(--safe-left));
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.mute-badge[hidden] {
+  display: none;
+}
+
+.mute-badge svg {
+  width: 36px;
+  height: 36px;
+  fill: currentColor;
+}
+
 /* EPG popup */
 
 .epg-popup {
