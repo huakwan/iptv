@@ -1,4 +1,4 @@
-import { PUBLIC_DIR, EOL } from '../constants'
+import { PUBLIC_DIR, STREAMS_DIR, EOL } from '../constants'
 import { Generator } from './generator'
 import { Stream } from '../models'
 import { execSync } from 'node:child_process'
@@ -32,6 +32,24 @@ function getBuildVersion(): string {
   return sha ? `${timestamp} · ${sha}` : timestamp
 }
 
+function loadChannelNumbers(): Map<string, number> {
+  const numbers = new Map<string, number>()
+  const dir = path.join(process.cwd(), STREAMS_DIR)
+  if (!fs.existsSync(dir)) return numbers
+
+  for (const file of fs.readdirSync(dir).sort()) {
+    if (!file.endsWith('.json')) continue
+    const entries = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'))
+    for (const entry of entries) {
+      if (entry.tvgId && typeof entry.number === 'number' && !numbers.has(entry.tvgId)) {
+        numbers.set(entry.tvgId, entry.number)
+      }
+    }
+  }
+
+  return numbers
+}
+
 type WebGeneratorProps = {
   streams: Collection<Stream>
   logFile: File
@@ -40,6 +58,7 @@ type WebGeneratorProps = {
 type ChannelEntry = {
   tvgId: string
   name: string
+  number?: number
   logo: string
   group: string
   url: string
@@ -134,6 +153,7 @@ export class WebGenerator implements Generator {
 
     const channels: ChannelEntry[] = []
     const seen = new Set<string>()
+    const channelNumbers = loadChannelNumbers()
 
     this.streams
       .filter(
@@ -159,6 +179,7 @@ export class WebGenerator implements Generator {
         channels.push({
           tvgId,
           name: stream.channelName || stream.title || tvgId,
+          number: channelNumbers.get(tvgId),
           logo: stream.getTvgLogo(),
           group: group || '',
           url: stream.url,

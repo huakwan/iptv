@@ -172,7 +172,7 @@
     hideLoader()
     hideControls()
     if (channel && channel.name) {
-      fallbackName.textContent = channel.name
+      fallbackName.textContent = displayName(channel)
       if (channel.logo) {
         fallbackLogo.src = channel.logo
         fallbackLogo.hidden = false
@@ -503,7 +503,7 @@
   function openPlayer(target, withFullscreen) {
     channel = target
     document.title = channel.name + ' - HK IPTV'
-    barTitle.textContent = channel.name
+    barTitle.textContent = displayName(channel)
 
     if (channel.logo) {
       barLogo.src = channel.logo
@@ -562,6 +562,10 @@
     return (name || '?').trim().charAt(0).toUpperCase()
   }
 
+  function displayName(item) {
+    return item.number ? 'ช่อง ' + item.number + ' | ' + item.name : item.name
+  }
+
   function createCard(item) {
     var link = document.createElement('a')
     link.className = 'card'
@@ -591,7 +595,7 @@
 
     var title = document.createElement('span')
     title.className = 'card-title'
-    title.textContent = item.name
+    title.textContent = displayName(item)
 
     link.appendChild(thumb)
     link.appendChild(title)
