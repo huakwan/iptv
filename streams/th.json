@@ -81,14 +81,14 @@
     "name": "MONO 29",
     "number": 29,
     "group": "Entertainment",
-    "url": "https://live-us1.thaimomo.com/live-as/chmono29-2/playlist.m3u8"
+    "url": "https://live-us1.thaimomo.com/live-as/chmono29-1/playlist.m3u8"
   },
   {
     "tvgId": "MCOTHD.th@SD",
     "name": "MCOT HD",
     "number": 30,
     "group": "General",
-    "url": "https://live-us1.thaimomo.com/live-as/chmcothd-3/playlist.m3u8"
+    "url": "https://mcothd-streaming-edge-cdn.mcot.net/tencentmcot/smil:tencentmcot.smil/playlist.m3u8"
   },
   {
     "tvgId": "One31.th@SD",
@@ -156,6 +156,7 @@
     "tvgId": "RamaChannel.th@SD",
     "name": "Rama Channel",
     "group": "General",
+    "gain": 15,
     "url": "https://ramach.ddns.net/live/ramalive/index.m3u8"
   },
   {
