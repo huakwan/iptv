@@ -49,7 +49,7 @@
   var muted = false
   var watchdogTimer = null
 
-  var WATCHDOG_MS = 20000
+  var WATCHDOG_MS = 30000
 
   var audioCtx = null
   var mediaSourceNode = null
@@ -415,13 +415,14 @@
     })
   }
 
-  /* ---------- Multi-tier ABR for thaimomo ---------- */
+  /* ---------- Single-tier thaimomo (tiers are not ABR-aligned) ---------- */
 
   var TIER_RE = /^(https:\/\/live-us1\.thaimomo\.com\/live-as\/[A-Za-z0-9]+)-\d+(\/playlist\.m3u8)$/
 
   var MASTER_CACHE_BASE = 'hk-iptv-master:'
   var MASTER_CACHE_PREFIX = MASTER_CACHE_BASE + 'v2:'
   var MASTER_TTL = 6 * 60 * 60 * 1000
+  var masterMemCache = new Map()
 
   var masterSourceUrl = null
   var masterFromCache = false
@@ -452,6 +453,7 @@
   }
 
   function readCachedMaster(url) {
+    if (masterMemCache.has(url)) return masterMemCache.get(url)
     try {
       var raw = window.localStorage.getItem(MASTER_CACHE_PREFIX + url)
       if (!raw) return null
@@ -461,6 +463,7 @@
         window.localStorage.removeItem(MASTER_CACHE_PREFIX + url)
         return null
       }
+      masterMemCache.set(url, entry.master)
       return entry.master
     } catch {
       return null
@@ -469,6 +472,7 @@
 
   function writeCachedMaster(url, master) {
     if (!master) return
+    masterMemCache.set(url, master)
     try {
       window.localStorage.setItem(
         MASTER_CACHE_PREFIX + url,
@@ -480,6 +484,7 @@
   }
 
   function clearCachedMaster(url) {
+    masterMemCache.delete(url)
     try {
       window.localStorage.removeItem(MASTER_CACHE_PREFIX + url)
     } catch {
@@ -548,34 +553,38 @@
     })
   }
 
+  function fetchTierVariant(base, tier, suffix) {
+    return fetchText(base + '-' + tier + suffix).then(function (text) {
+      if (!text) return null
+      var lines = text.split(/\r?\n/)
+      var inf = null
+      var file = null
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].trim()
+        if (!line) continue
+        if (line.indexOf('#EXT-X-STREAM-INF') === 0) inf = line
+        else if (line.charAt(0) !== '#') file = line
+      }
+      if (!inf || !file) return null
+      return { inf: inf, uri: base + '-' + tier + '/' + file }
+    })
+  }
+
   function buildTierMaster(url) {
     var match = url.match(TIER_RE)
     if (!match) return Promise.resolve(null)
 
     var base = match[1]
     var suffix = match[2]
-    var tiers = [1, 2, 3]
+    var tiers = [2]
 
     return Promise.all(
       tiers.map(function (tier) {
-        return fetchText(base + '-' + tier + suffix).then(function (text) {
-          if (!text) return null
-          var lines = text.split(/\r?\n/)
-          var inf = null
-          var file = null
-          for (var i = 0; i < lines.length; i++) {
-            var line = lines[i].trim()
-            if (!line) continue
-            if (line.indexOf('#EXT-X-STREAM-INF') === 0) inf = line
-            else if (line.charAt(0) !== '#') file = line
-          }
-          if (!inf || !file) return null
-          return { inf: inf, uri: base + '-' + tier + '/' + file }
-        })
+        return fetchTierVariant(base, tier, suffix)
       })
     ).then(function (variants) {
       var valid = variants.filter(Boolean)
-      if (valid.length < 2) return null
+      if (valid.length < 1) return null
 
       var out = '#EXTM3U\n#EXT-X-VERSION:3\n'
       for (var i = 0; i < valid.length; i++) {
@@ -594,12 +603,12 @@
     }
     hls = new window.Hls({
       lowLatencyMode: false,
-      startLevel: -1,
+      startLevel: 0,
       maxBufferLength: 30,
       maxMaxBufferLength: 60,
       backBufferLength: 30,
       testBandwidth: false,
-      abrEwmaDefaultEstimate: 2000000,
+      abrEwmaDefaultEstimate: 800000,
       abrEwmaFastLive: 2,
       abrEwmaSlowLive: 9,
       abrBandWidthFactor: 0.9,
