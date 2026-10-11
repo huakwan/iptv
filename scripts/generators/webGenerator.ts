@@ -146,24 +146,22 @@ async function downloadLogos(channels: ChannelEntry[], logosDir: string): Promis
   let saved = 0
 
   for (const channel of channels) {
-    const url = channel.logo
-    if (!url) continue
-
-    if (cache.has(url)) {
-      const local = cache.get(url)
-      if (local) channel.logo = local
-      continue
-    }
-
     const base = sanitizeFilename(channel.name || channel.tvgId)
 
     const override = overrides.get(base)
     if (override && !used.has(override)) {
       fs.copyFileSync(path.join(overridesDir, override), path.join(logosDir, override))
       used.add(override)
-      const local = `logos/${override}`
-      cache.set(url, local)
-      channel.logo = local
+      channel.logo = `logos/${override}`
+      continue
+    }
+
+    const url = channel.logo
+    if (!url) continue
+
+    if (cache.has(url)) {
+      const local = cache.get(url)
+      if (local) channel.logo = local
       continue
     }
 
