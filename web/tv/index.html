@@ -27,6 +27,43 @@
       href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
+    <script>
+      (function () {
+        var NIGHT_START = 18
+        var NIGHT_END = 6
+        var NIGHT_BG = '#05070a'
+        var DAY_BG = '#0b0f14'
+
+        function isNight(date) {
+          var hour = date.getHours()
+          return hour >= NIGHT_START || hour < NIGHT_END
+        }
+
+        function apply() {
+          var night = isNight(new Date())
+          document.documentElement.classList.toggle('theme-night', night)
+          var meta = document.querySelector('meta[name="theme-color"]')
+          if (meta) meta.setAttribute('content', night ? NIGHT_BG : DAY_BG)
+        }
+
+        function schedule() {
+          apply()
+          var now = new Date()
+          var next = new Date(now)
+          if (now.getHours() < NIGHT_END) {
+            next.setHours(NIGHT_END, 0, 0, 0)
+          } else if (now.getHours() < NIGHT_START) {
+            next.setHours(NIGHT_START, 0, 0, 0)
+          } else {
+            next.setDate(next.getDate() + 1)
+            next.setHours(NIGHT_END, 0, 0, 0)
+          }
+          setTimeout(schedule, next.getTime() - now.getTime() + 1000)
+        }
+
+        schedule()
+      })()
+    </script>
     <link rel="stylesheet" href="styles.css" />
     <!-- Cloudflare Web Analytics --><script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "db7db000c4dc4c48b4e4b3c50d0630ca"}'></script><!-- End Cloudflare Web Analytics -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js" defer></script>

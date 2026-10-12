@@ -21,6 +21,18 @@
   --title-offset: calc(50% + var(--btn-main) / 2 + 18px);
 }
 
+/* Auto night theme (18:00-06:00): darker cards to reduce glare on the road */
+
+html.theme-night {
+  --bg: #030405;
+  --panel: #080b0f;
+  --panel-2: #0d1218;
+  --logo-bg: #545e6a;
+  --name-bg: #444d58;
+  --name-text: #c7d1dc;
+  --border: #181f27;
+}
+
 * {
   box-sizing: border-box;
 }
