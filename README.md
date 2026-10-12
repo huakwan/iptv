@@ -4,7 +4,7 @@
 
 ## ที่มา
 
-โปรเจกต์นี้ fork มาจาก [iptv-org/iptv](https://github.com/iptv-org/iptv) ซึ่งรวบรวมลิงก์สตรีมสาธารณะทั่วโลก แต่เวอร์ชันนี้ **ตัดให้เหลือเฉพาะช่องไทยจำนวนหนึ่ง** ที่ทดสอบแล้วว่าเล่นได้ (ปัจจุบัน 25 ช่อง) โดยแก้ไขจากรายการใน [`streams/th.json`](streams/th.json) เท่านั้น ไม่ได้ตั้งใจทำเป็นคลังช่องครบทุกช่องเหมือนต้นทาง
+โปรเจกต์นี้ fork มาจาก [iptv-org/iptv](https://github.com/iptv-org/iptv) ซึ่งรวบรวมลิงก์สตรีมสาธารณะทั่วโลก แต่เวอร์ชันนี้ **ตัดให้เหลือเฉพาะช่องไทยจำนวนหนึ่ง** ที่ทดสอบแล้วว่าเล่นได้ (ปัจจุบัน 42 ช่อง) โดยแก้ไขจากรายการใน [`streams/th.json`](streams/th.json) เท่านั้น ไม่ได้ตั้งใจทำเป็นคลังช่องครบทุกช่องเหมือนต้นทาง
 
 ## การใช้งานกับ APTV (Apple CarPlay)
 
@@ -47,8 +47,9 @@ https://huakwan.github.io/iptv/guide.xml
 | ------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | General       | 3HD, Channel 5, Channel 7, Channel 8, MCOT HD, One 31, NBT 2 HD, NBT 11, PPTV, Charoen Cable 37 TV, Vipa TV, Rama Channel |
 | Entertainment | Workpoint TV, MONO 29, True4U, Amarin TV, GMM 25, Thai Chaiyo, Cool Channel, Good Idea TV                                 |
-| News          | Thai PBS, Thairath TV, Nation TV, Thai Parliament Television                                                              |
+| News          | Thai PBS, Thairath TV, Nation TV, Thai Parliament Television, News1, 13 Siam Thai                                         |
 | Sports        | T Sports 7                                                                                                                |
+| Education     | DLTV 1, DLTV 2, DLTV 3, DLTV 4, DLTV 5, DLTV 6, DLTV 7, DLTV 8, DLTV 9, DLTV 10, DLTV 11, DLTV 12, DLTV 13, DLTV 14, DLTV 15 |
 
 หมายเหตุ: ลิงก์สตรีม IPTV ตายบ่อย หากช่องใดเล่นไม่ได้ ให้แจ้งผ่าน issue
 
