@@ -1,3 +1,4 @@
+import { sanitizeFilename } from '../logoOverrides'
 import { PUBLIC_DIR, STREAMS_DIR, EOL } from '../constants'
 import { Generator } from './generator'
 import { Stream } from '../models'
@@ -117,13 +118,6 @@ function getLogoExtension(url: string): string {
   }
 
   return 'png'
-}
-
-function sanitizeFilename(value: string): string {
-  return value
-    .trim()
-    .replace(/[^a-zA-Z0-9._-]+/g, '_')
-    .replace(/^_+|_+$/g, '')
 }
 
 async function downloadLogos(channels: ChannelEntry[], logosDir: string): Promise<number> {

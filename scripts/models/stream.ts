@@ -1,3 +1,4 @@
+import { sanitizeFilename, getLogoOverrideUrl } from '../logoOverrides'
 import { normalizeURL, isURI } from '../utils'
 import { Collection } from '@freearhey/core'
 import parser from 'iptv-playlist-parser'
@@ -440,6 +441,11 @@ export class Stream extends sdk.Models.Stream {
   }
 
   getTvgLogo(): string {
+    const override = getLogoOverrideUrl(
+      sanitizeFilename(this.channelName || this.title || this.getTvgId())
+    )
+    if (override) return override
+
     const logo = this.getLogos().first()
 
     return logo ? logo.url : ''
