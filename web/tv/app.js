@@ -414,7 +414,9 @@
     })
   }
 
-  /* ---------- Auto quality (lowUrl fallback, tiers are not ABR-aligned) ---------- */
+  /* ---------- Auto quality: combined 2-level master + manual level switch ---------- */
+  /* Tiers are independent encodes, so a blob master merges url + lowUrl and we */
+  /* switch with hls.nextLevel, keeping the MSE attached (last frame stays up). */
 
   var QUALITY_COOLDOWN_MS = 60 * 1000
   var QUALITY_STREAK = 3
@@ -429,7 +431,7 @@
   var slowStreak = 0
   var fastStreak = 0
   var fragSeen = 0
-  var highBitrateCache = 0
+  var masterBlobUrl = null
 
   function purgeLegacyMasterCache() {
     try {
@@ -458,20 +460,84 @@
     return channel.lowUrl
   }
 
-  function currentLevelBitrate() {
-    if (!hls || hls.currentLevel < 0 || !hls.levels || !hls.levels[hls.currentLevel]) return 0
-    return hls.levels[hls.currentLevel].bitrate || 0
+  function levelIndexes() {
+    if (!hls || !hls.levels || hls.levels.length < 2) return null
+    var low = 0
+    var high = 0
+    for (var i = 1; i < hls.levels.length; i++) {
+      if ((hls.levels[i].bitrate || 0) < (hls.levels[low].bitrate || 0)) low = i
+      if ((hls.levels[i].bitrate || 0) > (hls.levels[high].bitrate || 0)) high = i
+    }
+    if (high === low) return null
+    return { low: low, high: high }
   }
 
   function targetHighBitrate() {
-    if (quality === 'high') {
-      var current = currentLevelBitrate()
-      if (current) highBitrateCache = current
-    }
-    if (highBitrateCache) return highBitrateCache
+    var idx = levelIndexes()
+    if (!idx) return 0
+    return hls.levels[idx.high].bitrate || 0
+  }
 
-    var low = currentLevelBitrate()
-    return low ? Math.round(low * 1.5) : 0
+  function fetchText(url) {
+    var controller = new AbortController()
+    var timer = setTimeout(function () {
+      controller.abort()
+    }, 4000)
+    return fetch(url, { mode: 'cors', cache: 'no-store', signal: controller.signal })
+      .then(function (response) {
+        clearTimeout(timer)
+        return response.ok ? response.text() : null
+      })
+      .catch(function () {
+        clearTimeout(timer)
+        return null
+      })
+  }
+
+  function fetchVariant(masterUrl) {
+    return fetchText(masterUrl).then(function (text) {
+      if (!text) return null
+      var lines = text.split(/\r?\n/)
+      var inf = null
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].trim()
+        if (!line) continue
+        if (line.indexOf('#EXT-X-STREAM-INF') === 0) {
+          inf = line
+        } else if (line.charAt(0) !== '#' && inf) {
+          return { inf: inf, uri: new URL(line, masterUrl).href }
+        }
+      }
+      return null
+    })
+  }
+
+  function buildCombinedMaster(highUrl, lowUrl) {
+    return Promise.all([fetchVariant(highUrl), fetchVariant(lowUrl)]).then(function (variants) {
+      var high = variants[0]
+      var low = variants[1]
+      if (!high || !low) return null
+      return (
+        '#EXTM3U\n#EXT-X-VERSION:3\n' +
+        high.inf + '\n' + high.uri + '\n' +
+        low.inf + '\n' + low.uri + '\n'
+      )
+    })
+  }
+
+  function releaseMasterBlob() {
+    if (masterBlobUrl) {
+      URL.revokeObjectURL(masterBlobUrl)
+      masterBlobUrl = null
+    }
+  }
+
+  function masterBlob(master) {
+    releaseMasterBlob()
+    masterBlobUrl = URL.createObjectURL(
+      new Blob([master], { type: 'application/vnd.apple.mpegurl' })
+    )
+    return masterBlobUrl
   }
 
   function estimateThroughput(data) {
@@ -487,8 +553,8 @@
 
   function switchQuality(next) {
     if (!channel) return
-    var target = next === 'low' ? channelLowUrl() : channel.url
-    if (!target || quality === next) return
+    var idx = levelIndexes()
+    if (!idx || quality === next) return
 
     quality = next
     qualitySwitchedAt = Date.now()
@@ -496,13 +562,12 @@
     fastStreak = 0
     fragSeen = 0
 
-    if (window.console && console.info) console.info('[quality] ' + next + ' ' + target)
+    var target = next === 'low' ? idx.low : idx.high
+    if (window.console && console.info) console.info('[quality] ' + next + ' level=' + target)
 
-    if (hls) {
-      hls.destroy()
-      hls = null
-    }
-    attachHls(target)
+    // Switch inside the existing MSE so the last frame stays on screen.
+    hls.nextLevel = target
+    updateResolution()
   }
 
   function requestQuality(next) {
@@ -513,6 +578,7 @@
 
   function evaluateQuality(data) {
     if (!channel || !channel.lowUrl || lowBroken) return
+    if (!levelIndexes()) return
     if (Date.now() - qualitySwitchedAt < QUALITY_COOLDOWN_MS) return
 
     fragSeen++
@@ -581,6 +647,12 @@
     })
     hls.attachMedia(video)
     hls.on(window.Hls.Events.MANIFEST_PARSED, function () {
+      var idx = levelIndexes()
+      if (idx) {
+        var start = quality === 'low' ? idx.low : idx.high
+        quality = start === idx.low ? 'low' : 'high'
+        hls.currentLevel = start
+      }
       if (video.paused) tryPlay()
     })
     hls.on(window.Hls.Events.LEVEL_SWITCHED, function () {
@@ -604,12 +676,10 @@
             setTimeout(function () {
               if (hls) hls.startLoad()
             }, retryDelay)
-          } else if (quality === 'low' && channel && channel.lowUrl && !lowBroken) {
+          } else if (quality === 'low' && !lowBroken && levelIndexes()) {
             lowBroken = true
-            hls.destroy()
-            hls = null
             quality = 'high'
-            attachHls(channel.url)
+            hls.nextLevel = levelIndexes().high
           } else {
             hls.destroy()
             hls = null
@@ -636,6 +706,7 @@
     fragSeen = 0
     slowStreak = 0
     fastStreak = 0
+    releaseMasterBlob()
     if (hls) {
       hls.destroy()
       hls = null
@@ -677,7 +748,20 @@
     }
 
     var playWithHls = function () {
-      attachHls(url)
+      if (!channel || !channel.lowUrl || lowBroken) {
+        quality = 'high'
+        attachHls(url)
+        return
+      }
+      buildCombinedMaster(channel.url, channel.lowUrl).then(function (master) {
+        if (!channel) return
+        if (master) {
+          attachHls(masterBlob(master))
+        } else {
+          quality = 'high'
+          attachHls(channel.url)
+        }
+      })
     }
 
     if (isIOS() && video.canPlayType('application/vnd.apple.mpegurl')) {
@@ -822,7 +906,6 @@
     slowStreak = 0
     fastStreak = 0
     fragSeen = 0
-    highBitrateCache = 0
 
     startPlayback(quality === 'low' ? channel.lowUrl : channel.url)
     renderEpgList()
