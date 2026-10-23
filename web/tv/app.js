@@ -41,7 +41,6 @@
   var epg = {}
   var channel = null
   var hls = null
-  var tierBlobUrl = null
   var controlsTimer = null
   var networkRetries = 0
   var pushed = false
@@ -415,91 +414,29 @@
     })
   }
 
-  /* ---------- Single-tier thaimomo (tiers are not ABR-aligned) ---------- */
+  /* ---------- Auto quality (lowUrl fallback, tiers are not ABR-aligned) ---------- */
 
-  var TIER_RE = /^(https:\/\/live-us1\.thaimomo\.com\/live-as\/[A-Za-z0-9]+)-\d+(\/playlist\.m3u8)$/
+  var QUALITY_COOLDOWN_MS = 60 * 1000
+  var QUALITY_STREAK = 3
+  var QUALITY_MIN_FRAGS = 3
+  var QUALITY_DOWN_FACTOR = 1.2
+  var QUALITY_UP_FACTOR = 1.5
+  var LEGACY_MASTER_PREFIX = 'hk-iptv-master:'
 
-  var MASTER_CACHE_BASE = 'hk-iptv-master:'
-  var MASTER_CACHE_PREFIX = MASTER_CACHE_BASE + 'v2:'
-  var MASTER_TTL = 6 * 60 * 60 * 1000
-  var masterMemCache = new Map()
+  var quality = 'high'
+  var qualitySwitchedAt = 0
+  var lowBroken = false
+  var slowStreak = 0
+  var fastStreak = 0
+  var fragSeen = 0
+  var highBitrateCache = 0
 
-  var masterSourceUrl = null
-  var masterFromCache = false
-  var cacheRecovered = false
-  var pendingCacheUrl = null
-  var pendingCacheMaster = null
-
-  function tierFetchTimeout() {
-    var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection
-    var slow = conn && (conn.saveData || /^(slow-2g|2g|3g)$/.test(conn.effectiveType || ''))
-    return slow ? 2500 : 3500
-  }
-
-  function fetchText(url) {
-    var controller = new AbortController()
-    var timer = setTimeout(function () {
-      controller.abort()
-    }, tierFetchTimeout())
-    return fetch(url, { mode: 'cors', cache: 'no-store', signal: controller.signal })
-      .then(function (response) {
-        clearTimeout(timer)
-        return response.ok ? response.text() : null
-      })
-      .catch(function () {
-        clearTimeout(timer)
-        return null
-      })
-  }
-
-  function readCachedMaster(url) {
-    if (masterMemCache.has(url)) return masterMemCache.get(url)
-    try {
-      var raw = window.localStorage.getItem(MASTER_CACHE_PREFIX + url)
-      if (!raw) return null
-      var entry = JSON.parse(raw)
-      if (!entry || typeof entry.master !== 'string' || !entry.ts) return null
-      if (Date.now() - entry.ts > MASTER_TTL) {
-        window.localStorage.removeItem(MASTER_CACHE_PREFIX + url)
-        return null
-      }
-      masterMemCache.set(url, entry.master)
-      return entry.master
-    } catch {
-      return null
-    }
-  }
-
-  function writeCachedMaster(url, master) {
-    if (!master) return
-    masterMemCache.set(url, master)
-    try {
-      window.localStorage.setItem(
-        MASTER_CACHE_PREFIX + url,
-        JSON.stringify({ master: master, ts: Date.now() })
-      )
-    } catch {
-      /* storage full or unavailable: run without cache */
-    }
-  }
-
-  function clearCachedMaster(url) {
-    masterMemCache.delete(url)
-    try {
-      window.localStorage.removeItem(MASTER_CACHE_PREFIX + url)
-    } catch {
-      /* ignore */
-    }
-  }
-
-  function purgeStaleMasterCache() {
+  function purgeLegacyMasterCache() {
     try {
       var stale = []
       for (var i = 0; i < window.localStorage.length; i++) {
         var key = window.localStorage.key(i)
-        if (key && key.indexOf(MASTER_CACHE_BASE) === 0 && key.indexOf(MASTER_CACHE_PREFIX) !== 0) {
-          stale.push(key)
-        }
+        if (key && key.indexOf(LEGACY_MASTER_PREFIX) === 0) stale.push(key)
       }
       stale.forEach(function (key) {
         window.localStorage.removeItem(key)
@@ -509,91 +446,106 @@
     }
   }
 
-  function scheduleMasterCache(url, master) {
-    pendingCacheUrl = url
-    pendingCacheMaster = master
+  function prefersLowNetwork() {
+    var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection
+    if (!conn) return false
+    if (conn.saveData) return true
+    return /^(slow-2g|2g|3g)$/.test(conn.effectiveType || '')
   }
 
-  function commitMasterCache() {
-    if (pendingCacheMaster && pendingCacheUrl) {
-      writeCachedMaster(pendingCacheUrl, pendingCacheMaster)
+  function channelLowUrl() {
+    if (!channel || !channel.lowUrl || lowBroken) return null
+    return channel.lowUrl
+  }
+
+  function currentLevelBitrate() {
+    if (!hls || hls.currentLevel < 0 || !hls.levels || !hls.levels[hls.currentLevel]) return 0
+    return hls.levels[hls.currentLevel].bitrate || 0
+  }
+
+  function targetHighBitrate() {
+    if (quality === 'high') {
+      var current = currentLevelBitrate()
+      if (current) highBitrateCache = current
     }
-    pendingCacheUrl = null
-    pendingCacheMaster = null
+    if (highBitrateCache) return highBitrateCache
+
+    var low = currentLevelBitrate()
+    return low ? Math.round(low * 1.5) : 0
   }
 
-  function refreshMasterCache(url) {
-    if (!TIER_RE.test(url)) return
-    buildTierMaster(url).then(function (master) {
-      if (!master) return
-      if (readCachedMaster(url) !== master) writeCachedMaster(url, master)
-    })
-  }
-
-  function cacheMasterBlob(master) {
-    if (tierBlobUrl) {
-      URL.revokeObjectURL(tierBlobUrl)
-      tierBlobUrl = null
+  function estimateThroughput(data) {
+    var stats = data && data.frag && data.frag.stats
+    if (stats && stats.bwEstimate) return stats.bwEstimate
+    if (stats && stats.loading && stats.loading.first && stats.loading.end > stats.loading.first) {
+      var seconds = (stats.loading.end - stats.loading.first) / 1000
+      if (seconds > 0) return (stats.total * 8) / seconds
     }
-    tierBlobUrl = URL.createObjectURL(
-      new Blob([master], { type: 'application/vnd.apple.mpegurl' })
-    )
-    return tierBlobUrl
+    if (hls && hls.bandwidthEstimate) return hls.bandwidthEstimate
+    return 0
   }
 
-  function recoverMaster(url) {
-    buildTierMaster(url).then(function (master) {
-      if (!channel) return
-      if (!master) {
-        showFallback(FALLBACK_MSG.cors)
-        return
+  function switchQuality(next) {
+    if (!channel) return
+    var target = next === 'low' ? channelLowUrl() : channel.url
+    if (!target || quality === next) return
+
+    quality = next
+    qualitySwitchedAt = Date.now()
+    slowStreak = 0
+    fastStreak = 0
+    fragSeen = 0
+
+    if (window.console && console.info) console.info('[quality] ' + next + ' ' + target)
+
+    if (hls) {
+      hls.destroy()
+      hls = null
+    }
+    attachHls(target)
+  }
+
+  function requestQuality(next) {
+    setTimeout(function () {
+      switchQuality(next)
+    }, 0)
+  }
+
+  function evaluateQuality(data) {
+    if (!channel || !channel.lowUrl || lowBroken) return
+    if (Date.now() - qualitySwitchedAt < QUALITY_COOLDOWN_MS) return
+
+    fragSeen++
+    if (fragSeen < QUALITY_MIN_FRAGS) return
+
+    var estimate = estimateThroughput(data)
+    var high = targetHighBitrate()
+    if (!estimate || !high) return
+
+    if (quality === 'high') {
+      fastStreak = 0
+      if (estimate < high * QUALITY_DOWN_FACTOR) {
+        slowStreak++
+        if (slowStreak >= QUALITY_STREAK) {
+          slowStreak = 0
+          requestQuality('low')
+        }
+      } else {
+        slowStreak = 0
       }
-      scheduleMasterCache(url, master)
-      attachHls(cacheMasterBlob(master))
-    })
-  }
-
-  function fetchTierVariant(base, tier, suffix) {
-    return fetchText(base + '-' + tier + suffix).then(function (text) {
-      if (!text) return null
-      var lines = text.split(/\r?\n/)
-      var inf = null
-      var file = null
-      for (var i = 0; i < lines.length; i++) {
-        var line = lines[i].trim()
-        if (!line) continue
-        if (line.indexOf('#EXT-X-STREAM-INF') === 0) inf = line
-        else if (line.charAt(0) !== '#') file = line
+    } else {
+      slowStreak = 0
+      if (estimate > high * QUALITY_UP_FACTOR) {
+        fastStreak++
+        if (fastStreak >= QUALITY_STREAK) {
+          fastStreak = 0
+          requestQuality('high')
+        }
+      } else {
+        fastStreak = 0
       }
-      if (!inf || !file) return null
-      return { inf: inf, uri: base + '-' + tier + '/' + file }
-    })
+    }
   }
-
-  function buildTierMaster(url) {
-    var match = url.match(TIER_RE)
-    if (!match) return Promise.resolve(null)
-
-    var base = match[1]
-    var suffix = match[2]
-    var tiers = [2]
-
-    return Promise.all(
-      tiers.map(function (tier) {
-        return fetchTierVariant(base, tier, suffix)
-      })
-    ).then(function (variants) {
-      var valid = variants.filter(Boolean)
-      if (valid.length < 1) return null
-
-      var out = '#EXTM3U\n#EXT-X-VERSION:3\n'
-      for (var i = 0; i < valid.length; i++) {
-        out += valid[i].inf + '\n' + valid[i].uri + '\n'
-      }
-      return out
-    })
-  }
-
   function attachHls(url) {
     networkRetries = 0
     if (channelGain !== 1) {
@@ -637,6 +589,9 @@
     hls.on(window.Hls.Events.LEVEL_LOADED, function () {
       updateResolution()
     })
+    hls.on(window.Hls.Events.FRAG_LOADED, function (event, data) {
+      evaluateQuality(data)
+    })
     hls.loadSource(url)
     hls.on(window.Hls.Events.ERROR, function (event, data) {
       if (!data || !data.fatal) return
@@ -649,17 +604,16 @@
             setTimeout(function () {
               if (hls) hls.startLoad()
             }, retryDelay)
+          } else if (quality === 'low' && channel && channel.lowUrl && !lowBroken) {
+            lowBroken = true
+            hls.destroy()
+            hls = null
+            quality = 'high'
+            attachHls(channel.url)
           } else {
             hls.destroy()
             hls = null
-            if (masterSourceUrl) clearCachedMaster(masterSourceUrl)
-            if (masterFromCache && !cacheRecovered && masterSourceUrl) {
-              cacheRecovered = true
-              masterFromCache = false
-              recoverMaster(masterSourceUrl)
-            } else {
-              showFallback(isTimeout ? FALLBACK_MSG.timeout : FALLBACK_MSG.cors)
-            }
+            showFallback(isTimeout ? FALLBACK_MSG.timeout : FALLBACK_MSG.cors)
           }
           break
         }
@@ -679,12 +633,9 @@
     clearWatchdog()
     hideLoader()
     if (debugRes) debugRes.hidden = true
-    pendingCacheUrl = null
-    pendingCacheMaster = null
-    if (tierBlobUrl) {
-      URL.revokeObjectURL(tierBlobUrl)
-      tierBlobUrl = null
-    }
+    fragSeen = 0
+    slowStreak = 0
+    fastStreak = 0
     if (hls) {
       hls.destroy()
       hls = null
@@ -704,7 +655,8 @@
     fallback.hidden = true
     errorMsg.textContent = ''
     showControls()
-    startPlayback(channel.url)
+    lowBroken = false
+    startPlayback(quality === 'low' && channelLowUrl() ? channelLowUrl() : channel.url)
   }
 
   function startPlayback(url) {
@@ -719,34 +671,13 @@
     armWatchdog()
     showControls()
 
-    masterSourceUrl = url
-    masterFromCache = false
-    cacheRecovered = false
-    pendingCacheUrl = null
-    pendingCacheMaster = null
-
     var playNative = function () {
       video.src = url
       tryPlay()
     }
 
     var playWithHls = function () {
-      var cached = readCachedMaster(url)
-      if (cached) {
-        masterFromCache = true
-        attachHls(cacheMasterBlob(cached))
-        refreshMasterCache(url)
-        return
-      }
-      buildTierMaster(url).then(function (master) {
-        if (!channel) return
-        if (master) {
-          scheduleMasterCache(url, master)
-          attachHls(cacheMasterBlob(master))
-        } else {
-          attachHls(url)
-        }
-      })
+      attachHls(url)
     }
 
     if (isIOS() && video.canPlayType('application/vnd.apple.mpegurl')) {
@@ -885,7 +816,15 @@
 
     if (withFullscreen) requestFullscreen(stage)
 
-    startPlayback(channel.url)
+    quality = channel.lowUrl && prefersLowNetwork() ? 'low' : 'high'
+    lowBroken = false
+    qualitySwitchedAt = 0
+    slowStreak = 0
+    fastStreak = 0
+    fragSeen = 0
+    highBitrateCache = 0
+
+    startPlayback(quality === 'low' ? channel.lowUrl : channel.url)
     renderEpgList()
   }
 
@@ -1169,7 +1108,6 @@
     clearWatchdog()
     hideLoader()
     syncPlayIcon()
-    commitMasterCache()
     if (wasLoading) {
       hideControls()
     } else {
@@ -1247,7 +1185,7 @@
 
   /* ---------- Init ---------- */
 
-  purgeStaleMasterCache()
+  purgeLegacyMasterCache()
 
   loadEpg()
 

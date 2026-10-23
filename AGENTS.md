@@ -23,7 +23,7 @@ Thailand-only fork of [iptv-org/iptv](https://github.com/iptv-org/iptv). Generat
 ## Source of truth
 
 - **`streams/th.json` is the only file to edit by hand.** It feeds `streams/th.m3u` (generated, gitignored via `/streams/*.m3u`) and the web app's `channels.json`.
-- Entry fields: `tvgId` (required), `name` (required), `url` (required), `number` (channel number in the web app), `group`, `gain` (per-channel volume trim, dB), `labels`, `userAgent`, `referrer`. The labels `Not 24/7` and `Geo-blocked` may also be written as a `name` suffix like `[Not 24/7]`.
+- Entry fields: `tvgId` (required), `name` (required), `url` (required), `number` (channel number in the web app), `group`, `gain` (per-channel volume trim, dB), `lowUrl` (optional lower-bandwidth fallback for the web player, e.g. thaimomo `-1`), `labels`, `userAgent`, `referrer`. The labels `Not 24/7` and `Geo-blocked` may also be written as a `name` suffix like `[Not 24/7]`.
 - Adding/removing a channel = edit `streams/th.json`, then `npm run playlist:generate`. The same change must add/remove the matching `<channel>` entries in `.github/epg/channels.xml`.
 
 ## Playlist gotchas (verify before assuming)
@@ -56,7 +56,12 @@ Thailand-only fork of [iptv-org/iptv](https://github.com/iptv-org/iptv). Generat
   - It deliberately uses the device's local timezone (`new Date().getHours()`), not a pinned `Asia/Bangkok`, so a device set to another timezone follows that timezone.
   - The dark values live in `web/tv/styles.css` under `html.theme-night` (overrides `--bg`, `--panel`, `--logo-bg`, `--name-bg`, `--border`). Change the window in the inline script; change colors in the CSS. `app.js` does not handle the theme.
   - Only `index.html` gets it; static pages (`about.html`, `privacy.html`, `disclaimer.html`) link `styles.css` but have no night script, so they stay on the default palette.
-- Player (`app.js`): pins live in `localStorage` key `hk-iptv-pins` (long-press a card to toggle), the thaimomo single-tier master is rebuilt/cached, and per-channel `gain` is applied through a WebAudio gain + limiter.
+- Player (`app.js`): pins live in `localStorage` key `hk-iptv-pins` (long-press a card to toggle), per-channel `gain` is applied through a WebAudio gain + limiter, and adaptive quality uses `lowUrl` rather than hls.js ABR.
+  - thaimomo tiers (`-1`/`-2`/`-3`) are separate encodes, not an ABR ladder, so they are never merged into one master. `url` is the high tier and `lowUrl` the low tier; the player plays one at a time.
+  - On each `FRAG_LOADED` it estimates throughput (hls.js `frag.stats.bwEstimate`/`bandwidthEstimate`). After 3 fragments and outside a 60-second cooldown: down to `lowUrl` when the estimate stays below `1.2 × high bitrate` for 3 fragments; back up to `url` when it stays above `1.5 × high bitrate` for 3 fragments. Switching re-attaches HLS at the live edge (~1–2 s gap).
+  - Start quality follows `navigator.connection` (`saveData` or `slow-2g`/`2g`/`3g` starts low); otherwise high. If `lowUrl` fails fatally it is marked broken for the session and playback stays on `url`.
+  - Only channels with `lowUrl` in `channels.json` adapt; single-variant sources without it (DLTV, Channel 5) are fixed. iOS native HLS cannot measure throughput, so it only picks the start quality. `m3u` clients always get `url` (the `.m3u` format carries one URL).
+  - Legacy `localStorage` keys prefixed `hk-iptv-master:` (the removed single-tier master cache) are purged on load.
 
 ## Code constraints
 

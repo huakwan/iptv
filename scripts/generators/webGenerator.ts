@@ -70,6 +70,29 @@ function loadChannelGains(): Map<string, number> {
   return gains
 }
 
+function loadChannelLowUrls(): Map<string, string> {
+  const lowUrls = new Map<string, string>()
+  const dir = path.join(process.cwd(), STREAMS_DIR)
+  if (!fs.existsSync(dir)) return lowUrls
+
+  for (const file of fs.readdirSync(dir).sort()) {
+    if (!file.endsWith('.json')) continue
+    const entries = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'))
+    for (const entry of entries) {
+      if (
+        entry.tvgId &&
+        typeof entry.lowUrl === 'string' &&
+        entry.lowUrl.startsWith('https://') &&
+        !lowUrls.has(entry.tvgId)
+      ) {
+        lowUrls.set(entry.tvgId, entry.lowUrl)
+      }
+    }
+  }
+
+  return lowUrls
+}
+
 type WebGeneratorProps = {
   streams: Collection<Stream>
   logFile: File
@@ -82,6 +105,7 @@ type ChannelEntry = {
   logo: string
   group: string
   url: string
+  lowUrl?: string
   referrer: string
   userAgent: string
   labels: string[]
@@ -291,6 +315,7 @@ export class WebGenerator implements Generator {
     const seen = new Set<string>()
     const channelNumbers = loadChannelNumbers()
     const channelGains = loadChannelGains()
+    const channelLowUrls = loadChannelLowUrls()
 
     this.streams
       .filter(
@@ -320,6 +345,7 @@ export class WebGenerator implements Generator {
           logo: stream.getTvgLogo(),
           group: group || '',
           url: stream.url,
+          ...(channelLowUrls.get(tvgId) ? { lowUrl: channelLowUrls.get(tvgId) } : {}),
           referrer: stream.referrer || '',
           userAgent: stream.user_agent || '',
           labels: stream.getLabels(),
