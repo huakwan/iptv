@@ -39,6 +39,7 @@
 
   var channels = []
   var epg = {}
+  var epgPromise = null
   var channel = null
   var hls = null
   var controlsTimer = null
@@ -93,10 +94,13 @@
     return null
   }
 
+  /* textarea decodes entities as RCDATA: no parsing, no resource loads, one node reused */
+  var decodeNode = document.createElement('textarea')
+
   function decodeEntities(value) {
     if (!value) return ''
-    var doc = new DOMParser().parseFromString('<body>' + value + '</body>', 'text/html')
-    return doc.body.textContent || ''
+    decodeNode.innerHTML = value
+    return decodeNode.value
   }
 
   function formatTime(ms) {
@@ -134,13 +138,30 @@
   }
 
   function togglePin(tvgId) {
-    if (pins.has(tvgId)) {
-      pins.delete(tvgId)
-    } else {
-      pins.add(tvgId)
-    }
+    var pinned = !pins.has(tvgId)
+    if (pinned) pins.add(tvgId)
+    else pins.delete(tvgId)
     savePins()
-    renderGrid()
+
+    var cards = grid.children
+    for (var i = 0; i < cards.length; i++) {
+      if (cards[i].dataset.tvgId !== tvgId) continue
+      var card = cards[i]
+      card.classList.toggle('is-pinned', pinned)
+      var badge = card.querySelector('.pin-badge')
+      if (pinned && !badge) {
+        badge = document.createElement('span')
+        badge.className = 'pin-badge'
+        badge.setAttribute('aria-hidden', 'true')
+        badge.innerHTML = STAR_SVG
+        card.appendChild(badge)
+      } else if (!pinned && badge) {
+        badge.remove()
+      }
+      break
+    }
+
+    reorderGrid()
   }
 
   function openPinConfirm(item) {
@@ -400,18 +421,26 @@
     }
   }
 
-  function loadHlsScript() {
-    return new Promise(function (resolve, reject) {
-      if (window.Hls) return resolve()
+  var hlsScriptPromise = null
 
+  function loadHlsScript() {
+    if (window.Hls) return Promise.resolve()
+    if (hlsScriptPromise) return hlsScriptPromise
+
+    hlsScriptPromise = new Promise(function (resolve, reject) {
       var script = document.createElement('script')
       script.src = 'https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js'
       script.async = true
       script.dataset.hls = 'true'
       script.onload = resolve
-      script.onerror = reject
+      script.onerror = function () {
+        hlsScriptPromise = null
+        reject(new Error('hls.js failed to load'))
+      }
       document.head.appendChild(script)
     })
+
+    return hlsScriptPromise
   }
 
   /* ---------- Auto quality: combined 2-level master + manual level switch ---------- */
@@ -834,6 +863,17 @@
     epgList.innerHTML = ''
     if (!channel) return
 
+    if (!epgPromise) {
+      var waiting = document.createElement('p')
+      waiting.className = 'muted epg-popup-empty'
+      waiting.textContent = 'กำลังโหลดผังรายการ...'
+      epgList.appendChild(waiting)
+      loadEpg().then(function () {
+        if (!epgPopup.hidden) renderEpgList()
+      })
+      return
+    }
+
     var list = epg[channel.tvgId] || []
     if (!list.length) {
       var empty = document.createElement('p')
@@ -908,7 +948,6 @@
     fragSeen = 0
 
     startPlayback(quality === 'low' ? channel.lowUrl : channel.url)
-    renderEpgList()
   }
 
   function closePlayer() {
@@ -1065,7 +1104,8 @@
   }
 
   function loadEpg() {
-    fetch('epg.json')
+    if (epgPromise) return epgPromise
+    epgPromise = fetch('epg.json')
       .then(function (response) {
         return response.ok ? response.json() : {}
       })
@@ -1074,8 +1114,34 @@
       })
       .then(function (data) {
         epg = data || {}
-        if (channel) renderEpgList()
       })
+    return epgPromise
+  }
+
+  function orderedChannels() {
+    var pinOrder = Array.from(pins)
+    function rank(item) {
+      var index = pinOrder.indexOf(item.tvgId)
+      return index === -1 ? Infinity : index
+    }
+    return channels.slice().sort(function (a, b) {
+      var ra = rank(a)
+      var rb = rank(b)
+      if (ra === rb) return 0
+      return ra - rb
+    })
+  }
+
+  /* Move existing cards into pin order: no rebuild, listeners and images survive. */
+  function reorderGrid() {
+    var cards = {}
+    for (var i = 0; i < grid.children.length; i++) {
+      cards[grid.children[i].dataset.tvgId] = grid.children[i]
+    }
+    orderedChannels().forEach(function (item) {
+      var card = cards[item.tvgId]
+      if (card) grid.appendChild(card)
+    })
   }
 
   function renderGrid() {
@@ -1084,21 +1150,9 @@
       return
     }
 
-    var pinOrder = Array.from(pins)
-    function rank(item) {
-      var index = pinOrder.indexOf(item.tvgId)
-      return index === -1 ? Infinity : index
-    }
-    var ordered = channels.slice().sort(function (a, b) {
-      var ra = rank(a)
-      var rb = rank(b)
-      if (ra === rb) return 0
-      return ra - rb
-    })
-
     grid.textContent = ''
     var fragment = document.createDocumentFragment()
-    ordered.forEach(function (item) {
+    orderedChannels().forEach(function (item) {
       fragment.appendChild(createCard(item))
     })
     grid.appendChild(fragment)
@@ -1269,8 +1323,6 @@
   /* ---------- Init ---------- */
 
   purgeLegacyMasterCache()
-
-  loadEpg()
 
   loadChannels()
     .then(function () {
