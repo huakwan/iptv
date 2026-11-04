@@ -116,9 +116,8 @@
     "name": "Thairath TV",
     "number": 32,
     "group": "News",
-    "referrer": "https://www.thairath.co.th/",
-    "url": "https://ssai-streaming.thairath.co.th/bamm-csai/playlist.m3u8",
-    "lowUrl": "https://ssai-streaming.thairath.co.th/bamm-csai/480p/index.m3u8"
+    "url": "https://live-us1.thaimomo.com/live-as/chthairathhd-2/playlist.m3u8",
+    "lowUrl": "https://live-us1.thaimomo.com/live-as/chthairathhd-1/playlist.m3u8"
   },
   {
     "tvgId": "3HD.th@SD",
