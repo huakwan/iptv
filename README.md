@@ -27,10 +27,10 @@
 ถ้าต้องการใส่เองด้วยมือ ใช้ลิงก์:
 
 ```
-https://huakwan.github.io/iptv/guide.xml
+https://tvepg.huakwan.workers.dev/guide.xml
 ```
 
-ข้อมูล EPG สร้างจากสองแหล่งคือ `gigatv.3bbtv.co.th` และ `tv.trueid.net` ถ้าแหล่งใดล่ม ช่องของแหล่งนั้นจะไม่มีผังในรอบนั้น แต่ยังเล่นสตรีมได้ตามปกติ
+ข้อมูล EPG ดึงจากบริการภายนอกที่ `tvepg.huakwan.workers.dev` (ส่วนหน้าเว็บดูทีวีดึงผังรายการจาก `https://tvepg.huakwan.workers.dev/epg.json` โดยตรง)
 
 ## ดูผ่านเว็บ
 
@@ -64,8 +64,7 @@ https://huakwan.github.io/iptv/guide.xml
 ส่วนนี้รวบไว้สั้น ๆ สำหรับผู้ที่ต้องการแก้ไขเพลย์ลิสต์เอง
 
 - แก้ช่องได้ที่ [`streams/th.json`](streams/th.json) ไฟล์เดียว (ไฟล์ `.m3u` ใน `streams/` ถูกสร้างใหม่และไม่เก็บใน git)
-- เมื่อเพิ่ม/ลบช่อง ต้องแก้ [`.github/epg/channels.xml`](.github/epg/channels.xml) ให้ตรงกันด้วย ไม่งั้นช่องจะไม่มีผังรายการ
-- หน้าเว็บดูทีวีแก้ที่โฟลเดอร์ [`web/`](web/) โดย `WebGenerator` จะคัดลอกไป `.gh-pages/tv/` และสร้าง `channels.json` / `epg.json` ให้เองตอน `playlist:generate`
+- หน้าเว็บดูทีวีแก้ที่โฟลเดอร์ [`web/`](web/) โดย `WebGenerator` จะคัดลอกไป `.gh-pages/tv/` และสร้าง `channels.json` ให้เองตอน `playlist:generate`
 - คำสั่งหลัก:
 
   ```sh

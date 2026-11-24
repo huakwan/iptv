@@ -50,6 +50,7 @@
   var watchdogTimer = null
 
   var WATCHDOG_MS = 30000
+  var EPG_URL = 'https://tvepg.huakwan.workers.dev/epg.json'
 
   var audioCtx = null
   var mediaSourceNode = null
@@ -1105,7 +1106,7 @@
 
   function loadEpg() {
     if (epgPromise) return epgPromise
-    epgPromise = fetch('epg.json')
+    epgPromise = fetch(EPG_URL)
       .then(function (response) {
         return response.ok ? response.json() : {}
       })
