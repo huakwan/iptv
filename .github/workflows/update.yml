@@ -2,7 +2,7 @@ name: update
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '17 17 * * *'
 permissions:
   contents: read
   pages: write
@@ -36,7 +36,7 @@ jobs:
         working-directory: .epg
         run: |
           mkdir -p "${{ github.workspace }}/.gh-pages"
-          npm run grab -- --channels=${{ github.workspace }}/.github/epg/channels.xml --output=${{ github.workspace }}/.gh-pages/guide.xml
+          npm run grab -- --channels=${{ github.workspace }}/.github/epg/channels.xml --output=${{ github.workspace }}/.gh-pages/guide.xml --days=2
       - name: Ensure guide exists
         run: |
           if [ ! -s .gh-pages/guide.xml ]; then
